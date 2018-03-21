@@ -2,10 +2,10 @@ from enum import Enum
 
 ### Config ###
 LOG_FOLDER_NAME = "logs"
-SUBREDDIT = "FakeCollegeFootball"
-CONFIG_SUBREDDIT = "FakeCollegeFootball"
-USER_AGENT = "FakeCFBRef (by /u/Watchful1)"
-OWNER = "watchful1"
+SUBREDDIT = "FakeCBB"
+CONFIG_SUBREDDIT = "FakeCBB"
+USER_AGENT = "FakeCBBRef (by /u/Watchful1 and /u/Zenverak)"
+OWNER = "zenverak"
 LOOP_TIME = 2*60
 DATABASE_NAME = "database.db"
 SUBREDDIT_LINK = "https://www.reddit.com/r/{}/comments/".format(SUBREDDIT)
@@ -17,7 +17,7 @@ normalPlays = ['run', 'pass', 'punt', 'punt', 'fieldGoal']
 timePlays = ['kneel', 'spike']
 conversionPlays = ['pat', 'twoPoint']
 datatag = " [](#datatag"
-quarterLength = 7*60
+quarterLength = 10*60
 
 ### Log ###
 logGameId = ""
