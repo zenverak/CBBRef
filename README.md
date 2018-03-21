@@ -1,1 +1,1 @@
-This is a referee bot for /r/FakeCollegeFootball
+This is a referee bot for /r/FakeCBB/
