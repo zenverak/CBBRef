@@ -17,7 +17,7 @@ except ImportError:
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
 SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
 CLIENT_SECRET_FILE = 'client_secret.json'
-APPLICATION_NAME = 'Google Sheets API Python Quickstart'
+APPLICATION_NAME = 'grabbing data from google sheets'
 
 play_dict = {}
 time_dict = {}
@@ -77,7 +77,7 @@ def get_values():
 
     category_ranges = ['push','average','chew']
 
-    free_throw_headers = ['Home', 'Away', 'Neutral']
+    free_throw_headers = ['home', 'away', 'neutral']
     
 
     range_headers = 'A2:Z2'
@@ -210,13 +210,15 @@ def get_time_dict(times):
         
     
 def get_all_dicts():
+    global play_dict
+    global time_dict
     head, push, ave, chew, free, time = get_values()
     play_dict = setup_play_dict(head, push, ave, chew,free)
     time_dict = get_time_dict(time)
-    return play_dict, time_dict
+
 
 if __name__ == '__main__':
-    play_dict, time_dict = get_all_dicts()
+    get_all_dicts()
 
     
     

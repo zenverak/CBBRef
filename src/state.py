@@ -212,30 +212,30 @@ def executePlay(game, play, number, numberMessage):
 	success = True
 	timeMessage = None
 	if game['status']['free']:
-                if number == -1:
-                        log.debug("Trying to shoot a free throw play, but didn't have a number")
-                        resultMessage = numberMessage
-                        success = False
+		if number == -1:
+			log.debug("Trying to shoot a free throw play, but didn't have a number")
+			resultMessage = numberMessage
+			success = False
 
-                else:
-                        game['status']['frees'] -= 1
-                        if game['status']['frees'] == 0:
-                                game['status']['free'] = False
-                        utils.addStat(game,'FTAttempted',1,startingPossessionHomeAway)
-                        numberResult, diffMessage = getNumberDiffForGame(game, number)
+		else:
+			game['status']['frees'] -= 1
+			if game['status']['frees'] == 0:
+				game['status']['free'] = False
+			utils.addStat(game,'FTAttempted',1,startingPossessionHomeAway)
+			numberResult, diffMessage = getNumberDiffForGame(game, number)
 
 
-                        if result['result'] == 'free':
-                                log.debug("Successful Free Throw")
-                                resultMessage = "The Free throw was successful"
-                                utils.addStat(game,'FTMade',1,startingPossessionHomeAway)
-                                scoreFreeThrow(game, startingPossessionHomeAway)
-                        else:
-                                log.debug("failed free throw")
-                                resultMessage =  "The free throw missed"
-                                
+			if result['result'] == 'free':
+				log.debug("Successful Free Throw")
+				resultMessage = "The Free throw was successful"
+				utils.addStat(game,'FTMade',1,startingPossessionHomeAway)
+				scoreFreeThrow(game, startingPossessionHomeAway)
+			else:
+				log.debug("failed free throw")
+				resultMessage =  "The free throw missed"
+				
 
-                        database.clearDefensiveNumber(game['dataID'])
+			database.clearDefensiveNumber(game['dataID'])
 
 		else:
 			resultMessage = "It looks like /]you're trying to get the extra point after a touchdown, but this isn't a valid play"
@@ -258,15 +258,15 @@ def executePlay(game, play, number, numberMessage):
 						resultMessage = "Result of play is a number of points, but something went wrong and I couldn't find what number"
 						success = False
 					else:
-                                                points = result['points']
-                                                if points ==  2:
-                                                        scoreTwoPoints(game, startingPossessionHomeAway)
-                                                        utils.addStat(game,'2PtAttempted',1,startingPossessionHomeAway))
-                                                        utils.addStat(game,'2PtMade',1,startingPossessionHomeAway))
-                                                elif points == 3:
-                                                        score3Points(game, startingPossessionHomeAway)
-                                                        utils.addStat(game,'3PtAttempted',1,startingPossessionHomeAway))
-                                                        utils.addStat(game,'3PtMade',1,startingPossessionHomeAway))
+						points = result['points']
+						if points ==  2:
+							scoreTwoPoints(game, startingPossessionHomeAway)
+							utils.addStat(game,'2PtAttempted',1,startingPossessionHomeAway))
+							utils.addStat(game,'2PtMade',1,startingPossessionHomeAway))
+						elif points == 3:
+							score3Points(game, startingPossessionHomeAway)
+							utils.addStat(game,'3PtAttempted',1,startingPossessionHomeAway))
+							utils.addStat(game,'3PtMade',1,startingPossessionHomeAway))
 						log.debug("Result is a gain of {} points".format(result['points']))
 						
 
@@ -276,7 +276,7 @@ def executePlay(game, play, number, numberMessage):
 				database.clearDefensiveNumber(game['dataID'])
 
 		elif play in globals.timePlays:
-                        pass
+			pass
 
 		else:
 			resultMessage = "{} isn't a valid play at the moment".format(play)

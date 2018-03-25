@@ -172,41 +172,41 @@ def renderGame(game):
 	bldr.append("\n\n")
 
 	for team in ['away', 'home']:
-                made = game[team]['2PtMade']+game[team]['3PtMade']
-                att = game[team]['2PtAttempted']+game[team]['3PtAttempted']
-                bldr.append(flair(game[team]))
-                bldr.append("\n\n")
+		made = game[team]['2PtMade']+game[team]['3PtMade']
+		att = game[team]['2PtAttempted']+game[team]['3PtAttempted']
+		bldr.append(flair(game[team]))
+		bldr.append("\n\n")
 		bldr.append("Shooting|Shooting %|3pters|3pt %|Free Throws|Free Throw %|Turnovers|Fouls|Bonus|Timeouts\n")
 		bldr.append(":-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:\n")
 		bldr.append("{}/{} shooting|{} %|{}/{}|{} %|{}/{}|{} %|{}|{}|{}|{}".format(
-                        made,
+			made,
 			att,
 			made/(att*1.0),
 			game[team]['3ptMade'],
 			game[team]['3PtAttempted'],
 			game[team]['3ptMade']/(1.0 *game[team]['3PtAttmpted']),
-                        game[team]['FTMade'],
-                        game[team]['FTAttempted'],
-                        game[team]['FTMade']/(1.0*game[team]['FTAttempted']),
+			game[team]['FTMade'],
+			game[team]['FTAttempted'],
+			game[team]['FTMade']/(1.0*game[team]['FTAttempted']),
 			game[team]['turnover'],
 			game[team]['fouls'],
 			game[team]['bonus'],
-                        game[team]['timeouts']))
+			game[team]['timeouts']))
 		bldr.append("\n\n___\n")
 
 	bldr.append("Playclock|Half\n")
 	bldr.append(":-:|:-:\n")
 	bldr.append("{}|{}\n".format(
-                renderTime(game['playclock']),
-                game['half']
-                ))
+		renderTime(game['playclock']),
+		game['half']
+		))
 	bldr.append("\n___\n\n")
 	if game['isOverTime']:
-                bldr.append("Team|H1|H2|OT|Total\n")
-                bldr.append(":-:|:-:|:-:|:-:|:-:\n")
-        else:
-                bldr.append("Team|H1|H2|Total\n")
-                bldr.append(":-:|:-:|:-:|:-:\n")                
+		bldr.append("Team|H1|H2|OT|Total\n")
+		bldr.append(":-:|:-:|:-:|:-:|:-:\n")
+	else:
+		bldr.append("Team|H1|H2|Total\n")
+		bldr.append(":-:|:-:|:-:|:-:\n")                
 	for team in ['away', 'home']:
 		bldr.append(flair(game[team]))
 		bldr.append('|')
@@ -214,13 +214,13 @@ def renderGame(game):
 		bldr.append('|')
 		bldr.append(game['score']['halves'][1][team])
 		bldr.append('|')
-                if game['isOverTime']:
-                        bldr.append(game[team]['overTimeScore'])
-                        bldr.append('|')
-                        bldr.append(game[team]['1stScore'] + game[team]['2ndScore'] + game[team]['overTimeScore'])
-                else:
-                        bldr.append(game['score'][team])
-        return ''.join(bldr)
+		if game['isOverTime']:
+			bldr.append(game[team]['overTimeScore'])
+			bldr.append('|')
+			bldr.append(game[team]['1stScore'] + game[team]['2ndScore'] + game[team]['overTimeScore'])
+		else:
+			bldr.append(game['score'][team])
+	return ''.join(bldr)
 
 
 def coinToss():
@@ -272,8 +272,8 @@ def isCoachHome(game, coach):
 
 def sendGameMessage(isHome, game, message, dataTable):
 	reddit.sendMessage(game[('home' if isHome else 'away')]['coaches'],
-	                   "{} vs {}".format(game['home']['name'], game['away']['name']),
-	                   embedTableInMessage(message, dataTable))
+			   "{} vs {}".format(game['home']['name'], game['away']['name']),
+			   embedTableInMessage(message, dataTable))
 	return reddit.getRecentSentMessage().id
 
 
@@ -394,9 +394,9 @@ def sendDefensiveNumberMessage(game):
 	defenseHomeAway = reverseHomeAway(game['status']['possession'])
 	log.debug("Sending get defence number to {}".format(getCoachString(game, defenseHomeAway)))
 	reddit.sendMessage(game[defenseHomeAway]['coaches'],
-	                   "{} vs {}".format(game['away']['name'], game['home']['name']),
-	                   embedTableInMessage("{}\n\nReply with a number between **1** and **{0}**, inclusive.".format(globals.maxRange)
-	                                       .format(getCurrentPlayString(game)), {'action': 'play'}))
+			   "{} vs {}".format(game['away']['name'], game['home']['name']),
+			   embedTableInMessage("{}\n\nReply with a number between **1** and **{0}**, inclusive.".format(globals.maxRange)
+					       .format(getCurrentPlayString(game)), {'action': 'play'}))
 	messageResult = reddit.getRecentSentMessage()
 	game['waitingId'] = messageResult.fullname
 	log.debug("Defensive number sent, now waiting on: {}".format(game['waitingId']))
@@ -500,13 +500,13 @@ def updateGameTimes(game):
 
 def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home', 'down': 1, 'yards': 10,
-	          'timeouts': {'home': 4, 'away': 4}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'free': False, 'frees': 0
-	          'halfType': 'normal', 'overtimePossession': None}
+		  'timeouts': {'home': 4, 'away': 4}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'free': False, 'frees': 0,
+		  'halfType': 'normal', 'overtimePossession': None}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
 	game = {'home': home, 'away': away, 'drives': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
-	        'waitingAction': 'coin', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",
-	        'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
-	        'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False}
+		'waitingAction': 'coin', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",
+		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
+		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False}
 	return game
 
 

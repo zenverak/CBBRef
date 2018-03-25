@@ -76,7 +76,7 @@ if not reddit.init(user):
 database.init()
 
 wiki.loadPages()
-sheets.get_all_dicts()
+
 while True:
 	try:
 		for message in reddit.getMessageStream():

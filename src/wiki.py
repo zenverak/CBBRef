@@ -7,7 +7,7 @@ from datetime import timedelta
 import reddit
 import globals
 import utils
-
+import sheets
 log = logging.getLogger("bot")
 
 teams = {}
@@ -26,8 +26,8 @@ def loadPages():
 		log.debug("Loading pages")
 		lastTime = datetime.utcnow()
 		loadTeams()
-		loadPlays()
-		loadTimes()
+		plays = sheets.play_dict()
+		times = sheets.time_dict()
 		log.debug("Done loading pages in: %d", int(time.perf_counter() - startTime))
 
 

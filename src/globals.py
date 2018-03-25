@@ -14,8 +14,7 @@ ACCOUNT_NAME = "default"
 ### Constants ###
 movementPlays = ['push', 'average','chew']
 normalPlays = ['run', 'pass', 'punt', 'punt', 'fieldGoal']
-timePlays = ['kneel', 'spike']
-conversionPlays = ['freeThrow;]
+conversionPlays = ['freeThrow',]
 datatag = " [](#datatag"
 halfLength = 10*60
 maxRange = 1000
