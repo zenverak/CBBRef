@@ -26,8 +26,9 @@ def loadPages():
 		log.debug("Loading pages")
 		lastTime = datetime.utcnow()
 		loadTeams()
-		plays = sheets.play_dict()
-		times = sheets.time_dict()
+		sheets.get_all_dicts()
+		plays = sheets.play_dict
+		times = sheets.time_dict
 		log.debug("Done loading pages in: %d", int(time.perf_counter() - startTime))
 
 
@@ -47,8 +48,8 @@ def loadTeams():
 		requirements = {
 			'tag': "[a-z]+",
 			'name': "[\w -]+",
-			'offense': "(Attack the Rim|Midrange|3 Point)",
-			'defense': "(Man|Zone|Press)",
+			'offense': "(attack the rim|midrange|3 point)",
+			'defense': "(man|zone|press)",
 		}
 		for requirement in requirements:
 			if not validateItem(team[requirement], requirements[requirement]):

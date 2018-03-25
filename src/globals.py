@@ -13,7 +13,8 @@ ACCOUNT_NAME = "default"
 
 ### Constants ###
 movementPlays = ['push', 'average','chew']
-normalPlays = ['run', 'pass', 'punt', 'punt', 'fieldGoal']
+scorePlays = ['Made 2pt', 'Made 3pt']
+foulScore = ['Made 3pt and Foul', 'Made 2pt and Foul']
 conversionPlays = ['freeThrow',]
 datatag = " [](#datatag"
 halfLength = 10*60

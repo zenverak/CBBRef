@@ -217,7 +217,7 @@ def executePlay(game, play, number, numberMessage):
 			resultMessage = numberMessage
 			success = False
 
-		else:
+		elif number > -1:
 			game['status']['frees'] -= 1
 			if game['status']['frees'] == 0:
 				game['status']['free'] = False
@@ -232,7 +232,7 @@ def executePlay(game, play, number, numberMessage):
 				scoreFreeThrow(game, startingPossessionHomeAway)
 			else:
 				log.debug("failed free throw")
-				resultMessage =  "The free throw missed"
+				resultMessage =  "The free throw has cursed you. Suffer."
 				
 
 			database.clearDefensiveNumber(game['dataID'])
@@ -241,7 +241,7 @@ def executePlay(game, play, number, numberMessage):
 			resultMessage = "It looks like /]you're trying to get the extra point after a touchdown, but this isn't a valid play"
 			success = False
 	else:
-		if play in globals.normalPlays:
+		if play in globals.scorePlays:
 			if number == -1:
 				log.debug("Trying to execute a normal play, but didn't have a number")
 				resultMessage = numberMessage
@@ -261,12 +261,12 @@ def executePlay(game, play, number, numberMessage):
 						points = result['points']
 						if points ==  2:
 							scoreTwoPoints(game, startingPossessionHomeAway)
-							utils.addStat(game,'2PtAttempted',1,startingPossessionHomeAway))
-							utils.addStat(game,'2PtMade',1,startingPossessionHomeAway))
+							utils.addStat(game,'2PtAttempted',1,startingPossessionHomeAway)
+							utils.addStat(game,'2PtMade',1,startingPossessionHomeAway)
 						elif points == 3:
 							score3Points(game, startingPossessionHomeAway)
-							utils.addStat(game,'3PtAttempted',1,startingPossessionHomeAway))
-							utils.addStat(game,'3PtMade',1,startingPossessionHomeAway))
+							utils.addStat(game,'3PtAttempted',1,startingPossessionHomeAway)
+							utils.addStat(game,'3PtMade',1,startingPossessionHomeAway)
 						log.debug("Result is a gain of {} points".format(result['points']))
 						
 
