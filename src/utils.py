@@ -45,6 +45,8 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		team['2ndScore'] = 0
 		team['overTimeScore'] = 0
 		team['bonus'] = N
+		team['OffRebound'] = 0
+		team['defRebound'] = 0
 
 	game = newGameObject(homeTeam, awayTeam)
 	if startTime is not None:

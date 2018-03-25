@@ -6,7 +6,7 @@ from apiclient import discovery
 from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
-
+from copy import deepcopy as dc
 try:
     import argparse
     flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
@@ -85,8 +85,8 @@ def get_values():
     
     headers = return_data(service, range_headers)
     push_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(3,12)]
-    average_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(15,23)]
-    chew_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(27,35)]
+    average_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(15,24)]
+    chew_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(27,36)]
 
     free_throw_ranges = 'A39:C39'
 
@@ -99,11 +99,92 @@ def get_values():
     free_throw_values = return_data(service, free_throw_ranges)
 
     time_off_values = [return_data(service, range_) for range_ in time_off_ranges]
+    return headers, push_values, average_values, chew_values, free_throw_values, time_off_values
 
     
 
- 
+def format_head(head):
+    return [h for h in head[0] if h!='']
 
+def combine(plays):
+    for play in plays:
+        p = play[0]
+
+def return_playdict():
+    sub_dict = {'Attack the Rim':{
+                        'Man':{},
+                        'Zone':{},
+                        'Press':{}
+                        },
+                'Midrange':{
+                        'Man':{},
+                        'Zone':{},
+                        'Press':{}
+                        },
+                '3 Point':{
+                        'Man':{},
+                        'Zone':{},
+                        'Press':{}
+                        }
+                }
+    play_dict = {'push':{},
+                 'average':{},
+                 'chew':{}}
+ 
+    for key in play_dict:
+        play_dict[key] = dc(sub_dict)
+    return play_dict
+
+
+def get_range_list(range_list):
+    new_range_list = []
+    new_range_list.append(range_list[0])
+    new_range_list.append(range_list[1])
+    i = 2
+    while i < len(range_list):
+        new_range_list.append([range_list[i],range_list[i+1]])
+        i += 2
+    return new_range_list
+
+def combine_headers_with_list(range_list, headers):
+    put_in_dict = {}
+    for i in range(2, len(range_list)):
+        range_ = range_list[i]
+        key = '{}-{}'.format(range_[0],range_[1])
+        head = headers[i]
+        result = {'result':head}
+        if head == 'Made 2pt' or head == 'Made 2pt and Foul':
+            result['points'] = 2
+        elif head == 'Made 3pt' or head == 'Made 3pt and Foul':
+            result['points'] = 3
+        put_in_dict[key] = result
+    return put_in_dict
+
+
+        
+    
+    
 
 if __name__ == '__main__':
-    get_values()
+    head, push, ave, chew, free, time = get_values()
+    play_dict = return_playdict()
+    new_headers =  format_head(head)
+    for plays in push:
+        play = plays[0]
+        off_style = play[0]
+        def_style = play[1]
+        new_play = get_range_list(play)
+        play_dict['push'][off_style][def_style] = combine_headers_with_list(new_play, new_headers)
+    for plays in ave:
+        play = plays[0]
+        off_style = play[0]
+        def_style = play[1]
+        new_play = get_range_list(play)
+        play_dict['average'][off_style][def_style] = combine_headers_with_list(new_play, new_headers)
+    for plays in chew:
+        play = plays[0]
+        off_style = play[0]
+        def_style = play[1]
+        new_play = get_range_list(play)
+        play_dict['chew'][off_style][def_style] = combine_headers_with_list(new_play, new_headers)
+    
