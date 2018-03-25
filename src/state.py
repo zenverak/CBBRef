@@ -30,11 +30,11 @@ def setStateOvertimeDrive(game, homeAway):
 	game['waitingOn'] = homeAway
 
 
-def score3Point(game, homeAway):
+def score3Points(game, homeAway):
 	scoreForTeam(game, 3, homeAway)
 
 
-def scoreTwoPoint(game, homeAway):
+def score2Points(game, homeAway):
 	scoreForTeam(game, 2, homeAway)
 
 
@@ -219,14 +219,16 @@ def executePlay(game, play, number, numberMessage):
 
                 else:
                         game['status']['frees'] -= 1
-                        game[startingPossessionHomeAway]['FTAttempted'] += 1
+                        if game['status']['frees'] == 0:
+                                game['status']['free'] = False
+                        utils.addStat(game,'FTAttempted',1,startingPossessionHomeAway)
                         numberResult, diffMessage = getNumberDiffForGame(game, number)
 
 
                         if result['result'] == 'free':
                                 log.debug("Successful Free Throw")
                                 resultMessage = "The Free throw was successful"
-                                game[startingPossessionHomeAway]['FTMade'] += 1
+                                utils.addStat(game,'FTMade',1,startingPossessionHomeAway)
                                 scoreFreeThrow(game, startingPossessionHomeAway)
                         else:
                                 log.debug("failed free throw")
@@ -250,19 +252,23 @@ def executePlay(game, play, number, numberMessage):
 
 				log.debug("Executing normal play: {}".format(play))
 				result = getPlayResult(game, play, numberResult)
-				if result['result'] == 'gain':
-					if 'yards' not in result:
-						log.warning("Result is a gain, but I couldn't find any yards")
-						resultMessage = "Result of play is a number of yards, but something went wrong and I couldn't find what number"
+				if result['result'] == 'score':
+					if 'points' not in result:
+						log.warning("Result is a score, but I couldn't find any points")
+						resultMessage = "Result of play is a number of points, but something went wrong and I couldn't find what number"
 						success = False
 					else:
-						log.debug("Result is a gain of {} yards".format(result['yards']))
-						gainResult, yards, resultMessage = executeGain(game, play, result['yards'])
-						if gainResult != "error":
-							if yards is not None:
-								actualResult = gainResult
-						else:
-							success = False
+                                                points = result['points']
+                                                if points ==  2:
+                                                        scoreTwoPoints(game, startingPossessionHomeAway)
+                                                        utils.addStat(game,'2PtAttempted',1,startingPossessionHomeAway))
+                                                        utils.addStat(game,'2PtMade',1,startingPossessionHomeAway))
+                                                elif points == 3:
+                                                        score3Points(game, startingPossessionHomeAway)
+                                                        utils.addStat(game,'3PtAttempted',1,startingPossessionHomeAway))
+                                                        utils.addStat(game,'3PtMade',1,startingPossessionHomeAway))
+						log.debug("Result is a gain of {} points".format(result['points']))
+						
 
 				if success and play == 'fieldGoal':
 					utils.addStat(game, 'fieldGoalsAttempted', 1)

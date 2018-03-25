@@ -484,8 +484,7 @@ def addStat(game, stat, amount, offenseHomeAway=None):
 	if offenseHomeAway is None:
 		offenseHomeAway = game['status']['possession']
 	game[offenseHomeAway][stat] += amount
-	if stat in ['yardsPassing', 'yardsRushing']:
-		game[offenseHomeAway]['yardsTotal'] += amount
+
 
 
 def isGameOvertime(game):
