@@ -14,6 +14,7 @@ import database
 import wiki
 import utils
 import state
+import sheets
 
 ### Logging setup ###
 LOG_LEVEL = logging.DEBUG
@@ -75,7 +76,7 @@ if not reddit.init(user):
 database.init()
 
 wiki.loadPages()
-
+sheets.get_all_dicts()
 while True:
 	try:
 		for message in reddit.getMessageStream():

@@ -19,6 +19,8 @@ SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Google Sheets API Python Quickstart'
 
+play_dict = {}
+time_dict = {}
 
 def get_credentials():
     """Gets valid user credentials from storage.
