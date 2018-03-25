@@ -13,8 +13,8 @@ def scoreForTeam(game, points, homeAway):
 	oldScore = game['score'][homeAway]
 	game['score'][homeAway] += points
 	log.debug("Score for {} changed from {} to {}".format(homeAway, oldScore, game['score'][homeAway]))
-	game['score']['quarters'][game['status']['quarter'] - 1][homeAway] += points
-	game[homeAway]['quarters'][game['status']['quarter'] - 1][homeAway] += points
+	game['score']['halves'][game['status']['half'] - 1][homeAway] += points
+	game[homeAway]['halves'][game['status']['half'] - 1][homeAway] += points
 
 
 
@@ -50,8 +50,8 @@ def getNumberDiffForGame(game, offenseNumber):
 		return -1
 
 	straightDiff = abs(offenseNumber - defenseNumber)
-	aroundRightDiff = abs(abs(1000-offenseNumber) + defenseNumber)
-	aroundLeftDiff = abs(offenseNumber + abs(1000-defenseNumber))
+	aroundRightDiff = abs(abs(globals.maxRange-offenseNumber) + defenseNumber)
+	aroundLeftDiff = abs(offenseNumber + abs(globals.maxRange-defenseNumber))
 
 	difference = min([straightDiff, aroundRightDiff, aroundLeftDiff])
 
@@ -211,27 +211,29 @@ def executePlay(game, play, number, numberMessage):
 	diffMessage = None
 	success = True
 	timeMessage = None
-	if game['status']['conversion']:
-		if play in globals.conversionPlays:
-			if number == -1:
-				log.debug("Trying to execute a normal play, but didn't have a number")
-				resultMessage = numberMessage
-				success = False
+	if game['status']['free']:
+                if number == -1:
+                        log.debug("Trying to shoot a free throw play, but didn't have a number")
+                        resultMessage = numberMessage
+                        success = False
 
-			else:
-				numberResult, diffMessage = getNumberDiffForGame(game, number)
+                else:
+                        game['status']['frees'] -= 1
+                        game[startingPossessionHomeAway]['FTAttempted'] += 1
+                        numberResult, diffMessage = getNumberDiffForGame(game, number)
 
 
-				if result['result'] == 'pat':
-					log.debug("Successful PAT")
-					resultMessage = "The PAT was successful"
-					scorePAT(game, game['status']['possession'])
-					if utils.isGameOvertime(game):
-						timeMessage = overtimeTurnover(game)
-					else:
-						setStateTouchback(game, utils.reverseHomeAway(game['status']['possession']))
+                        if result['result'] == 'free':
+                                log.debug("Successful Free Throw")
+                                resultMessage = "The Free throw was successful"
+                                game[startingPossessionHomeAway]['FTMade'] += 1
+                                scoreFreeThrow(game, startingPossessionHomeAway)
+                        else:
+                                log.debug("failed free throw")
+                                resultMessage =  "The free throw missed"
+                                
 
-				database.clearDefensiveNumber(game['dataID'])
+                        database.clearDefensiveNumber(game['dataID'])
 
 		else:
 			resultMessage = "It looks like /]you're trying to get the extra point after a touchdown, but this isn't a valid play"
@@ -268,33 +270,7 @@ def executePlay(game, play, number, numberMessage):
 				database.clearDefensiveNumber(game['dataID'])
 
 		elif play in globals.timePlays:
-			if play == 'kneel':
-				log.debug("Running kneel play")
-				actualResult = "kneel"
-				game['status']['down'] += 1
-				if game['status']['down'] > 4:
-					log.debug("Turnover on downs")
-					if utils.isGameOvertime(game):
-						timeMessage = overtimeTurnover(game)
-					else:
-						turnover(game)
-					resultMessage = "Turnover on downs"
-				else:
-					resultMessage = "The quarterback takes a knee"
-
-			elif play == 'spike':
-				log.debug("Running spike play")
-				actualResult = "spike"
-				game['status']['down'] += 1
-				if game['status']['down'] > 4:
-					log.debug("Turnover on downs")
-					if utils.isGameOvertime(game):
-						timeMessage = overtimeTurnover(game)
-					else:
-						turnover(game)
-					resultMessage = "Turnover on downs"
-				else:
-					resultMessage = "The quarterback spikes the ball"
+                        pass
 
 		else:
 			resultMessage = "{} isn't a valid play at the moment".format(play)
@@ -307,7 +283,7 @@ def executePlay(game, play, number, numberMessage):
 
 		messages.append(timeMessage)
 
-	if diffMessage is not None:
+	if diffMessage is None:
 		messages.append(diffMessage)
 
 	return success, '\n\n'.join(messages)

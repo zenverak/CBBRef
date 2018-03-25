@@ -107,7 +107,7 @@ def processMessageCoin(game, isHeads, author):
 			questionString = "do you want to **defend** or **attack**?"
 		else:
 			questionString = "do you want to **receive** or **defer**?"
-		message = "{}, {} won the toss, {}".format(utils.getCoachString(game, 'home'), game['away']['home'], questionString)
+		message = "{}, {} won the toss, {}".format(utils.getCoachString(game, 'home'), game['home']['name'], questionString)
 		return True, utils.embedTableInMessage(message, {'action': 'defer'})
 
 
