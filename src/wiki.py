@@ -37,7 +37,6 @@ def validateItem(playItem, regex):
 
 def loadTeams():
 	teamsPage = reddit.getWikiPage(globals.CONFIG_SUBREDDIT, "teams")
-
 	for teamLine in teamsPage.splitlines():
 		items = teamLine.split('|')
 		if len(items) < 5:
@@ -48,8 +47,8 @@ def loadTeams():
 		requirements = {
 			'tag': "[a-z]+",
 			'name': "[\w -]+",
-			'offense': "(option|spread|pro style)",
-			'defense': "(3-4|4-3|5-2)",
+			'offense': "(Attack the Rim|Midrange|3 Point)",
+			'defense': "(Man|Zone|Press)",
 		}
 		for requirement in requirements:
 			if not validateItem(team[requirement], requirements[requirement]):
@@ -119,12 +118,11 @@ def parsePlayPart(playPart):
 
 
 def loadPlays():
-	playsPage = reddit.getWikiPage(globals.CONFIG_SUBREDDIT, "plays")
 
+	playsPage = reddit.getWikiPage(globals.CONFIG_SUBREDDIT, "plays")
 	for playLine in playsPage.splitlines():
 		items = playLine.split('|')
 		isMovementPlay = items[0] in globals.movementPlays
-
 		if isMovementPlay:
 			startIndex = 4
 			if not initOffenseDefense(items[0], items[1], items[2], items[3]):

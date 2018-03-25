@@ -8,7 +8,7 @@ dbConn = None
 
 def init():
 	global dbConn
-	dbConn = sqlite3.connect(globals.DATABASE_NAME)
+#	dbConn = sqlite3.connect(globals.DATABASE_NAME)
 
 	dbConn = sqlite3.connect(globals.DATABASE_NAME)
 	c = dbConn.cursor()
@@ -17,8 +17,8 @@ def init():
 			ID INTEGER PRIMARY KEY AUTOINCREMENT,
 			ThreadID VARCHAR(80) NOT NULL,
 			DefenseNumber INTEGER,
-			Deadline TIMESTAMP NOT NULL DEFAULT DATETIME(CURRENT_TIMESTAMP, '+10 days'),
-			Playclock TIMESTAMP NOT NULL DEFAULT DATETIME(CURRENT_TIMESTAMP, '+24 hours'),
+			Deadline TIMESTAMP NOT NULL DEFAULT (DATETIME(CURRENT_TIMESTAMP, '+10 days')),
+			Playclock TIMESTAMP NOT NULL DEFAULT (DATETIME(CURRENT_TIMESTAMP, '+24 hours')),
 			Complete BOOLEAN NOT NULL DEFAULT 0,
 			Errored BOOLEAN NOT NULL DEFAULT 0,
 			UNIQUE (ThreadID)
@@ -35,6 +35,7 @@ def init():
 		)
 	''')
 	dbConn.commit()
+
 
 
 def close():

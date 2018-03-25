@@ -29,16 +29,22 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 	homeTeam = wiki.getTeamByCoach(homeCoach.lower())
 	awayTeam = wiki.getTeamByCoach(awayCoach.lower())
 	for team in [homeTeam, awayTeam]:
-		team['yardsPassing'] = 0
-		team['yardsRushing'] = 0
-		team['yardsTotal'] = 0
-		team['turnoverInterceptions'] = 0
+		team['2PtAttempted'] = 0
+		team['2PtMade'] = 0
+		team['3PtAttempted'] = 0
+		team['3PtMade'] = 0
+		team['turnovers'] = 0
 		team['turnoverFumble'] = 0
-		team['fieldGoalsScored'] = 0
-		team['fieldGoalsAttempted'] = 0
+		team['FTAttempted'] = 0
+		team['FTMade'] = 0
 		team['posTime'] = 0
 		team['record'] = None
 		team['playclockPenalties'] = 0
+		team['timeouts'] = 4
+		team['1stScore'] = 0
+		team['2ndScore'] = 0
+		team['overTimeScore'] = 0
+		team['bonus'] = N
 
 	game = newGameObject(homeTeam, awayTeam)
 	if startTime is not None:
@@ -88,7 +94,7 @@ def embedTableInMessage(message, table):
 	if table is None:
 		return message
 	else:
-		return "{}{}{})".format(message, globals.datatag, json.dumps(table))
+		return "{}{}{})".format(message, globals.datatag, json.dumps(table, indent=4, sort_keys=True, default=str))
 
 
 def extractTableFromMessage(message):
@@ -126,6 +132,7 @@ def verifyCoaches(coaches):
 
 
 def flair(team):
+#	print (team)
 	return "[{}](#f/{})".format(team['name'], team['tag'])
 
 
@@ -135,7 +142,6 @@ def renderTime(time):
 
 def renderGame(game):
 	bldr = []
-
 	bldr.append(flair(game['away']))
 	bldr.append(" **")
 	bldr.append(game['away']['name'])
@@ -164,80 +170,55 @@ def renderGame(game):
 	bldr.append("\n\n")
 
 	for team in ['away', 'home']:
-		bldr.append(flair(game[team]))
-		bldr.append("\n\n")
-		bldr.append("Total Passing Yards|Total Rushing Yards|Total Yards|Interceptions Lost|Fumbles Lost|Field Goals|Time of Possession\n")
-		bldr.append(":-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:\n")
-		bldr.append("{} yards|{} yards|{} yards|{}|{}|{}/{}|{}".format(
-			game[team]['yardsPassing'],
-			game[team]['yardsRushing'],
-			game[team]['yardsTotal'],
-			game[team]['turnoverInterceptions'],
-			game[team]['turnoverFumble'],
-			game[team]['fieldGoalsScored'],
-			game[team]['fieldGoalsAttempted'],
-			renderTime(game[team]['yardsPassing'])))
+                made = game[team]['2PtMade']+game[team]['3PtMade']
+                att = game[team]['2PtAttempted']+game[team]['3PtAttempted']
+                bldr.append(flair(game[team]))
+                bldr.append("\n\n")
+		bldr.append("Shooting|Shooting %|3pters|3pt %|Free Throws|Free Throw %|Turnovers|Fouls|Bonus|Timeouts\n")
+		bldr.append(":-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:\n")
+		bldr.append("{}/{} shooting|{} %|{}/{}|{} %|{}/{}|{} %|{}|{}|{}|{}".format(
+                        made,
+			att,
+			made/(att*1.0),
+			game[team]['3ptMade'],
+			game[team]['3PtAttempted'],
+			game[team]['3ptMade']/(1.0 *game[team]['3PtAttmpted']),
+                        game[team]['FTMade'],
+                        game[team]['FTAttempted'],
+                        game[team]['FTMade']/(1.0*game[team]['FTAttempted']),
+			game[team]['turnover'],
+			game[team]['fouls'],
+			game[team]['bonus'],
+                        game[team]['timeouts']))
 		bldr.append("\n\n___\n")
 
-	bldr.append("Game Summary|Time\n")
+	bldr.append("Playclock|Half\n")
 	bldr.append(":-:|:-:\n")
-	for drive in game['drives']:
-		bldr.append("test|test\n")
-
+	bldr.append("{}|{}\n".format(
+                renderTime(game['playclock']),
+                game['half']
+                ))
 	bldr.append("\n___\n\n")
-
-	bldr.append("Playclock|Quarter|Down|Ball Location|Possession|Timeouts\n")
-	bldr.append(":-:|:-:|:-:|:-:|:-:|:-:\n")
-	bldr.append(renderTime(game['status']['clock']))
-	bldr.append("|")
-	bldr.append(str(game['status']['quarter']))
-	bldr.append("|")
-	bldr.append(getDownString(game['status']['down']))
-	bldr.append(" & ")
-	bldr.append(str(game['status']['yards']))
-	bldr.append("|")
-	if game['status']['location'] < 50:
-		bldr.append(str(game['status']['location']))
-		bldr.append(" ")
-		team = game[game['status']['possession']]
-		bldr.append(flair(team['name']))
-	elif game['status']['location'] > 50:
-		bldr.append(str(100 - game['status']['location']))
-		bldr.append(" ")
-		team = game[reverseHomeAway(game['status']['possession'])]
-		bldr.append(flair(team['name']))
-	else:
-		bldr.append(str(game['status']['location']))
-	bldr.append("|")
-	team = game[game['status']['possession']]
-	bldr.append(flair(team['name']))
-	bldr.append("|")
+	if game['isOverTime']:
+                bldr.append("Team|H1|H2|OT|Total\n")
+                bldr.append(":-:|:-:|:-:|:-:|:-:\n")
+        else:
+                bldr.append("Team|H1|H2|Total\n")
+                bldr.append(":-:|:-:|:-:|:-:\n")                
 	for team in ['away', 'home']:
-		bldr.append(str(game['status']['timeouts'][team]))
 		bldr.append(flair(game[team]))
-
-	bldr.append("\n\n___\n\n")
-
-	bldr.append("Team|")
-	numQuarters = len(game['score']['quarters'])
-	for i in range(numQuarters):
-		bldr.append("Q")
-		bldr.append(str(i + 1))
-		bldr.append("|")
-	bldr.append("Total\n")
-	bldr.append((":-:|"*(numQuarters + 2))[:-1])
-	bldr.append("\n")
-	for team in ['home', 'away']:
-		bldr.append(flair(game[team]))
-		bldr.append("|")
-		for quarter in game['score']['quarters']:
-			bldr.append(str(quarter[team]))
-			bldr.append("|")
-		bldr.append("**")
-		bldr.append(str(game['score'][team]))
-		bldr.append("**\n")
-
-	return ''.join(bldr)
+		bldr.append('|')
+		bldr.append(game['score']['halves'][0][team])
+		bldr.append('|')
+		bldr.append(game['score']['halves'][1][team])
+		bldr.append('|')
+                if game['isOverTime']:
+                        bldr.append(game[team]['overTimeScore'])
+                        bldr.append('|')
+                        bldr.append(game[team]['1stScore'] + game[team]['2ndScore'] + game[team]['overTimeScore'])
+                else:
+                        bldr.append(game['score'][team])
+        return ''.join(bldr)
 
 
 def coinToss():
@@ -245,7 +226,7 @@ def coinToss():
 
 
 def playNumber():
-	return random.randint(0, 1500)
+	return random.randint(0, globals.maxRange)
 
 
 def getGameByThread(thread):
@@ -352,10 +333,6 @@ def getNthWord(number):
 		return "1st"
 	elif number == 2:
 		return "2nd"
-	elif number == 3:
-		return "3rd"
-	elif number == 4:
-		return "4th"
 	else:
 		return "{}th".format(number)
 
@@ -416,7 +393,7 @@ def sendDefensiveNumberMessage(game):
 	log.debug("Sending get defence number to {}".format(getCoachString(game, defenseHomeAway)))
 	reddit.sendMessage(game[defenseHomeAway]['coaches'],
 	                   "{} vs {}".format(game['away']['name'], game['home']['name']),
-	                   embedTableInMessage("{}\n\nReply with a number between **1** and **1500**, inclusive."
+	                   embedTableInMessage("{}\n\nReply with a number between **1** and **{0}**, inclusive.".format(globals.maxRange)
 	                                       .format(getCurrentPlayString(game)), {'action': 'play'}))
 	messageResult = reddit.getRecentSentMessage()
 	game['waitingId'] = messageResult.fullname
@@ -433,7 +410,7 @@ def extractPlayNumber(message):
 		return -1, "It looks like you puts more than one number in your message"
 
 	number = int(numbers[0])
-	if number < 1 or number > 1500:
+	if number < 1 or number > globals.maxRange:
 		log.debug("Number out of range: {}".format(number))
 		return -1, "I found {}, but that's not a valid number.".format(number)
 
@@ -512,7 +489,7 @@ def addStat(game, stat, amount, offenseHomeAway=None):
 
 
 def isGameOvertime(game):
-	return str.startswith(game['status']['quarterType'], 'overtime')
+	return str.startswith(game['status']['halfType'], 'overtime')
 
 
 def updateGameTimes(game):
@@ -521,15 +498,16 @@ def updateGameTimes(game):
 
 
 def newGameObject(home, away):
-	status = {'clock': globals.quarterLength, 'quarter': 1, 'location': -1, 'possession': 'home', 'down': 1, 'yards': 10,
-	          'timeouts': {'home': 3, 'away': 3}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'conversion': False,
-	          'quarterType': 'normal', 'overtimePossession': None}
-	score = {'quarters': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}, {'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
+	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home', 'down': 1, 'yards': 10,
+	          'timeouts': {'home': 4, 'away': 4}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'conversion': False,
+	          'halfType': 'normal', 'overtimePossession': None}
+	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
 	game = {'home': home, 'away': away, 'drives': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
 	        'waitingAction': 'coin', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",
 	        'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
-	        'deadline': datetime.utcnow() + timedelta(days=10)}
+	        'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False}
 	return game
+
 
 
 # team = {'tag': items[0], 'name': items[1], 'offense': items[2].lower(), 'defense': items[3].lower(),

@@ -116,7 +116,7 @@ while True:
 					utils.getCoachString(game, game['waitingOn']), utils.getNthWord(game[game['waitingOn']]['playclockPenalties']))
 				if game[game['waitingOn']]['playclockPenalties'] >= 3:
 					log.debug("3 penalties, game over")
-					game['status']['quarterType'] = 'end'
+					game['status']['halfType'] = 'end'
 					game['waitingAction'] = 'end'
 					resultMessage = "They forfeit the game. {} has won!".format(utils.flair(game[utils.reverseHomeAway(game['waitingOn'])]))
 
