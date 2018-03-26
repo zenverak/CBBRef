@@ -81,56 +81,44 @@ def processMessageNewGame(body, author):
 	return utils.startGame(homeCoach, awayCoach, startTime, location, station, homeRecord, awayRecord)
 
 
-def processMessageCoin(game, isHeads, author):
-	log.debug("Processing coin toss message: {}".format(str(isHeads)))
-
-	if isHeads == utils.coinToss():
-		log.debug("User won coin toss, asking if they want to defer")
-		game['waitingAction'] = 'defer'
-		game['waitingOn'] = 'away'
-		game['waitingId'] = 'return'
-		game['dirty'] = True
-
-		if utils.isGameOvertime(game):
-			questionString = "do you want to **defend** or **attack**?"
-		else:
-			questionString = "do you want to **receive** or **defer**?"
-		message = "{}, {} won the toss, {}".format(utils.getCoachString(game, 'away'), game['away']['name'], questionString)
-		return True, utils.embedTableInMessage(message, {'action': 'defer'})
-	else:
-		log.debug("User lost coin toss, asking other team if they want to defer")
-		game['waitingAction'] = 'defer'
-		game['waitingOn'] = 'home'
-		game['waitingId'] = 'return'
-		game['dirty'] = True
-
-		if utils.isGameOvertime(game):
-			questionString = "do you want to **defend** or **attack**?"
-		else:
-			questionString = "do you want to **receive** or **defer**?"
-		message = "{}, {} won the toss, {}".format(utils.getCoachString(game, 'home'), game['home']['name'], questionString)
-		return True, utils.embedTableInMessage(message, {'action': 'defer'})
-
 def processMessageTip(game, message):
-	number = re.findall('(\d+)', message.body)
-	log.debug("Processing tip ball")
-	author = str(message.author.lower())
-	log.debug("")
+	number = re.findall('(\d+)', message.body)[0]
+	author = str(message.author).lower()
+	log.debug("homeTip:{} awayTip:{} botTip:{}".format(game['homeTip'],game['awayTip'],game['botTip']))
+	log.debug("Processing tip ball for /u/{} whose number was {}. Game is dirty is {}".format(author, number,game['dirty']))
 	if author in game['away']['coaches']:
 		game['awayTip'] = number
 		if game['homeTip'] != '':
-			return True, 'got both numbers'
-		return True,"Got aways tip number"
+			game['dirty'] =  True
+		else:
+			return True,"Got your tip number as {}".format(number)
 	elif author in game['home']['coaches']:
 		game['homeTip'] = number
 		if game['awayTip'] != '':
-			return True, 'got both numbers'
-		return True, "Got home's tip number"
+			game['dirty'] =  True
+		else:
+			return True,"Got your tip number as {}".format(number)
 	else:
 		return False,  'ooops'
+	if game['awayTip'] != '' and game['homeTip'] != '' and game['dirty']:
+		tipWinner = utils.getTipWinner(game)
+		game['waitingOn'] =  utils.reverseHomeAway(tipWinner)
+		log.debug("sending initial defensive play comment to {}".format(game['waitingOn']))
+		resultMessage =  "/u/{} has won the tippoff . /u/{} Will get a DM to start the action. \n \
+						away tip number: {}\nhome tip number: {}\n bot tip number: {}".format(
+						game[tipWinner]['coaches'][0],
+						game[game['waitingOn']]['coaches'][0],
+						game['awayTip'],
+						game['homeTip'],
+						game['botTip']
+						)
 
 
 
+
+		utils.sendDefensiveNumberMessage(game)
+
+		return True, resultMessage
 
 
 def processMessageDefenseNumber(game, message, author):
@@ -155,7 +143,8 @@ def processMessageDefenseNumber(game, message, author):
 	game['dirty'] = True
 
 	log.debug("Sending offense play comment")
-	resultMessage = "{} has submitted their number. {} you're up.\n\n{}\n\n{} reply with {} and your number. [Play list]({})".format(
+	resultMessage = "{} has submitted their number. {} you're up\
+	.\n\n{}\n\n{} reply with {} and your number. [Play list]({})".format(
 		game[utils.reverseHomeAway(game['waitingOn'])]['name'],
 		game[game['waitingOn']]['name'],
 		utils.getCurrentPlayString(game),
@@ -184,25 +173,16 @@ def processMessageOffensePlay(game, message, author):
 		else:
 			timeoutMessageOffense = "The offense requested a timeout, but they don't have any left"
 
-	playOptions = ['run', 'pass', 'punt', 'field goal', 'kneel', 'spike', 'two point', 'pat']
+	playOptions = ['chew', 'average', 'push', 'regular']
 	playSelected = utils.findKeywordInMessage(playOptions, message)
 	play = "default"
-	if playSelected == "run":
-		play = "run"
-	elif playSelected == "pass":
-		play = "pass"
-	elif playSelected == "punt":
-		play = "punt"
-	elif playSelected == "field goal":
-		play = "fieldGoal"
-	elif playSelected == "kneel":
-		play = "kneel"
-	elif playSelected == "spike":
-		play = "spike"
-	elif playSelected == "two point":
-		play = "twoPoint"
-	elif playSelected == "pat":
-		play = "pat"
+	if playSelected == "chew":
+		play = "chew"
+	elif playSelected == "average":
+		play = "average"
+	elif playSelected == "push":
+		play = "push"
+
 	elif playSelected == "mult":
 		log.debug("Found multiple plays")
 		return False, "I found multiple plays in your message. Please repost it with just the play and number."
@@ -238,27 +218,11 @@ def processMessageOffensePlay(game, message, author):
 		log.debug("Starting overtime, posting coin toss comment")
 		message = "Overtime has started! {}, you're away, call **heads** or **tails** in the air.".format(
 			utils.getCoachString(game, 'away'))
-		comment = utils.sendGameComment(game, message, {'action': 'coin'})
+		comment = utils.sendGameComment(game, message, {'action': 'tip'})
 		game['waitingId'] = comment.fullname
-		game['waitingAction'] = 'coin'
+		game['waitingAction'] = 'tip'
 
 	return success, utils.embedTableInMessage('\n\n'.join(result), {'action': game['waitingAction']})
-
-
-def processMessageKickGame(body):
-	log.debug("Processing kick game message")
-	numbers = re.findall('(\d+)', body)
-	if len(numbers) < 1:
-		log.debug("Couldn't find a game id in message")
-		return "Couldn't find a game id in message"
-	log.debug("Found number: {}".format(str(numbers[0])))
-	success = database.clearGameErrored(numbers[0])
-	if success:
-		log.debug("Kicked game")
-		return "Game {} kicked".format(str(numbers[0]))
-	else:
-		log.debug("Couldn't kick game")
-		return "Couldn't kick game {}".format(str(numbers[0]))
 
 
 def processMessagePauseGame(body):
@@ -293,8 +257,27 @@ def processMessageAbandonGame(body):
 	return "Game {} abandoned".format(threadIds[0])
 
 
+def processMessageKickGame(body):
+	'''
+	This isn't kicking but the function that kicks a game, meaning
+	that it removes the game from existing
+	'''
+	log.debug("Processing kick game message")
+	numbers = re.findall('(\d+)', body)
+	if len(numbers) < 1:
+		log.debug("Couldn't find a game id in message")
+		return "Couldn't find a game id in message"
+	log.debug("Found number: {}".format(str(numbers[0])))
+	success = database.clearGameErrored(numbers[0])
+	if success:
+		log.debug("Kicked game")
+		return "Game {} kicked".format(str(numbers[0]))
+	else:
+		log.debug("Couldn't kick game")
+		return "Couldn't kick game {}".format(str(numbers[0]))
+
 def processMessage(message):
-	print( message)
+	## Determine if comment or dm
 	if isinstance(message, praw.models.Message):
 		isMessage = True
 		log.debug("Processing a message from /u/{} : {}".format(str(message.author), message.id))
@@ -331,8 +314,10 @@ def processMessage(message):
 		game = utils.getGameByUser(author)
 		if game is not None:
 			utils.setLogGameID(game['thread'], game['dataID'])
+			print('the action is {}'.format(dataTable['action']))
 
 			waitingOn = utils.isGameWaitingOn(game, author, dataTable['action'], dataTable['source'])
+			log.debug("waitingOn is {}".format(waitingOn))
 			if waitingOn is not None:
 				response = waitingOn
 				success = False
@@ -345,8 +330,10 @@ def processMessage(message):
 				updateWaiting = False
 
 			else:
+				log.debug('Trying to process tip, offense, or defense')
 				##this is where we start the game basically
-				if dataTable['action'] == 'tip' and not isMessage:
+				if dataTable['action'] == 'tip' and isMessage:
+					log.debug('About to process tip message from {}'.format(str(message.author)))
 					success, response = processMessageTip(game, message)
 
 
@@ -387,7 +374,7 @@ def processMessage(message):
 		if isMessage:
 			log.debug("Couldn't understand message")
 			resultMessage = reddit.replyMessage(message,
-			                    "I couldn't understand your message, please try again or message /u/Watchful1 if you need help.")
+			                    "I couldn't understand your message, please try again or message /u/zenverak if you need help.")
 		if resultMessage is None:
 			log.warning("Could not send message")
 

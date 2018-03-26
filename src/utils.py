@@ -24,7 +24,8 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 	coachNum, result = verifyCoaches([homeCoach, awayCoach])
 	if coachNum != -1:
 		log.debug("Coaches not verified, {} : {}".format(coachNum, result))
-		return "Something went wrong, someone is no longer an acceptable coach. Please try to start the game again"
+		return "Something went wrong, someone is no longer an \
+						acceptable coach. Please try to start the game again"
 
 	homeTeam = wiki.getTeamByCoach(homeCoach.lower())
 	awayTeam = wiki.getTeamByCoach(awayCoach.lower())
@@ -84,7 +85,10 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		log.debug("Coach added to away: {}".format(user))
 
 	log.debug("Game started, posting tip ball comment")
-	message = "The ball is throw in the air! {},  {}, Respond to my message for a TIP number".format(getCoachString(game, 'home'), getCoachString(game, 'away'))
+	message = "The ball is throw in the air! {},  {}, Respond to my message \
+				for a TIP number".format(getCoachString(game, 'home'),
+											getCoachString(game, 'away')
+											)
 	sendGameComment(game, message, {'action': 'tip'})
 	log.debug("Comment posted, now waiting on both")
 	updateGameThread(game)
@@ -98,7 +102,9 @@ def embedTableInMessage(message, table):
 	if table is None:
 		return message
 	else:
-		return "{}{}{})".format(message, globals.datatag, json.dumps(table, indent=4, sort_keys=True, default=str))
+		return "{}{}{})".format(message,
+		 					globals.datatag,
+							json.dumps(table, indent=4, sort_keys=True, default=str))
 
 
 def extractTableFromMessage(message):
@@ -197,7 +203,8 @@ def renderGame(game):
 		att = game[team]['2PtAttempted']+game[team]['3PtAttempted']
 		bldr.append(flair(game[team]))
 		bldr.append("\n\n")
-		bldr.append("Shooting|Shooting %|3pters|3pt %|Free Throws|Free Throw %|Turnovers|Fouls|Bonus|Timeouts\n")
+		bldr.append("Shooting|Shooting %|3pters|3pt %|Free Throws|Free Throw %\
+											|Turnovers|Fouls|Bonus|Timeouts\n")
 		bldr.append(":-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:\n")
 		bldr.append("{}/{}|{} %|{}/{}|{} %|{}/{}|{} %|{}|{}|{}|{}".format(
 			made,
@@ -238,7 +245,8 @@ def renderGame(game):
 		if game['isOverTime']:
 			bldr.append(str(game[team]['overTimeScore']))
 			bldr.append('|')
-			bldr.append(game[team]['1stScore'] + game[team]['2ndScore'] + game[team]['overTimeScore'])
+			bldr.append(game[team]['1stScore'] + game[team]['2ndScore'] +
+											game[team]['overTimeScore'])
 		else:
 			bldr.append(str(game['score'][team]))
 		bldr.append('\n')
@@ -253,10 +261,26 @@ def playNumber():
 	return random.randint(0, globals.maxRange)
 
 
+def rngNumber():
+	##randint is inclusive on both ends
+	return random.randint(1, globals.maxRange)
+
 def getGameByThread(thread):
 	threadText = reddit.getSubmission(thread).selftext
 	return extractTableFromMessage(threadText)
 
+
+def getTipWinner(game):
+	h = game['homeTip']
+	a = game['awayTip']
+	b = game['botTip']
+	log.debug('homeTip is {}\nawayTip is {}\nbotTipis {}'.format(h,a,b))
+	hDiff = abs(b - h)
+	aDiff = abs(b - a)
+	if hDiff <= aDiff:
+		return 'home'
+	else:
+		return 'away'
 
 def getGameByUser(user):
 	dataGame = database.getGameByCoach(user)
@@ -309,11 +333,15 @@ def sendGameComment(game, message, dataTable=None):
 def sendTipNumberMessages(game, coaches):
 	reddit.sendMessage(coaches,
 			   'Tip Number',
-			   embedTableInMessage("\n\nReply with a number between **1** and **{0}**, inclusive.".format(globals.maxRange)
+			   embedTableInMessage("\n\nReply with a number between \
+			   			**1** and **{0}**, inclusive.".format(globals.maxRange)
 					       , {'action': 'tip'}))
 	messageResult = reddit.getRecentSentMessage()
 	game['waitingId'] = messageResult.fullname
 	log.debug("Tip number sent, now waiting on: {}".format(game['waitingId']))
+
+def tipResults(game, number):
+
 
 def getHomeAwayString(isHome):
 	if isHome:
@@ -339,17 +367,25 @@ def getRange(rangeString):
 
 
 def isGameWaitingOn(game, user, action, messageId):
+	log.debug('checking on if we are waiting for {} with action {}'.format(user, action))
+	if game['waitingAction'] == 'tip' and action == 'tip':
+		log.debug('')
+		return None
 	if game['waitingAction'] != action:
 		log.debug("Not waiting on {}: {}".format(action, game['waitingAction']))
-		return "I'm not waiting on a {} for this game, are you sure you replied to the right message?".format(action)
+		return "I'm not waiting on a {} for this game, \
+		are you sure you replied to the right message?".format(action)
 
 	if (game['waitingOn'] == 'home') != isCoachHome(game, user):
 		log.debug("Not waiting on message author's team")
-		return "I'm not waiting on a message from you, are you sure you responded to the right message?"
+		return "I'm not waiting on a message from you, \
+		are you sure you responded to the right message?"
 
 	if game['waitingId'] is not None and game['waitingId'] != messageId:
-		log.debug("Not waiting on message id: {} : {}".format(game['waitingId'], messageId))
-		return "I'm not waiting on a reply to this message, be sure to respond to my newest message for this game."
+		log.debug("Not waiting on message \
+				id: {} : {}".format(game['waitingId'], messageId))
+		return "I'm not waiting on a reply to this message, \
+		be sure to respond to my newest message for this game."
 
 	return None
 
@@ -370,29 +406,8 @@ def getNthWord(number):
 		return "{}th".format(number)
 
 
-def getDownString(down):
-	if down >= 1 and down <= 4:
-		return getNthWord(down)
-	else:
-		log.warning("Hit a bad down number: {}".format(down))
-		return "{}".format(down)
 
 
-def getLocationString(location, offenseTeam, defenseTeam):
-	if location < 0 or location > 100:
-		log.warning("Bad location: {}".format(location))
-		return str(location)
-
-	if location == 0:
-		return "{} goal line".format(offenseTeam)
-	if location < 50:
-		return "{} {}".format(offenseTeam, location)
-	elif location == 50:
-		return str(location)
-	elif location == 100:
-		return "{} goal line".format(defenseTeam)
-	else:
-		return "{} {}".format(defenseTeam, 100 - location)
 
 
 def getCurrentPlayString(game):
@@ -402,14 +417,22 @@ def getCurrentPlayString(game):
 		return "It's {} and {} on the {}.".format(
 			getDownString(game['status']['down']),
 			"goal" if game['status']['location'] >= 90 else game['status']['yards'],
-			getLocationString(game['status']['location'], game[game['status']['possession']]['name'], game[reverseHomeAway(game['status']['possession'])]['name'])
+			getLocationString(game['status']['location'],
+			game[game['status']['possession']]['name'],
+			game[reverseHomeAway(game['status']['possession'])]['name'])
 		)
 
 
 def getWaitingOnString(game):
 	string = "Error, no action"
 	if game['waitingAction'] == 'tip':
-		string = "Waiting on {} for tip numbers".format(game[game['waitingOn']]['name'])
+		waitingOn = []
+		if game['homeTip'] == '':
+			waiting.append['home']
+		if game['awayTip'] == '':
+			waiting.append['away']
+
+		string = "Waiting on {} for tip numbers".format(''.join(waitingOn))
 	elif game['waitingAction'] == 'defer':
 		string = "Waiting on {} for receive/defer".format(game[game['waitingOn']]['name'])
 	elif game['waitingAction'] == 'play':
@@ -437,7 +460,8 @@ def extractPlayNumber(message):
 	numbers = re.findall('(\d+)', message)
 	if len(numbers) < 1:
 		log.debug("Couldn't find a number in message")
-		return -1, "It looks like you should be sending me a number, but I can't find one in your message."
+		return -1, "It looks like you should be sending me a number, \
+						but I can't find one in your message."
 	if len(numbers) > 1:
 		log.debug("Found more than one number")
 		return -1, "It looks like you puts more than one number in your message"
@@ -537,20 +561,5 @@ def newGameObject(home, away):
 	game = {'home': home, 'away': away, 'drives': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
 		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",
 		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
-		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':None, 'awayTip':None, 'botTip':None}
+		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':'', 'awayTip':'', 'botTip': rngNumber()}
 	return game
-
-
-
-# team = {'tag': items[0], 'name': items[1], 'offense': items[2].lower(), 'defense': items[3].lower(),
-#         'coaches': []}
-# team['yardsPassing'] = 0
-# team['yardsRushing'] = 0
-# team['yardsTotal'] = 0
-# team['turnoverInterceptions'] = 0
-# team['turnoverFumble'] = 0
-# team['fieldGoalsScored'] = 0
-# team['fieldGoalsAttempted'] = 0
-# team['posTime'] = 0
-# team['record'] = None
-# team['playclockPenalties'] = 0

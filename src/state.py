@@ -75,12 +75,14 @@ def findNumberInRangeDict(number, dict):
 	return None
 
 
+
+
+
 def getPlayResult(game, play, number):
 	playDict = wiki.getPlay(play)
 	if playDict is None:
 		log.warning("{} is not a valid play".format(play))
 		return None
-
 	log.debug("Getting play result for: {}".format(play))
 	if play in globals.movementPlays:
 		offense = game[game['status']['possession']]['offense']
@@ -94,7 +96,7 @@ def getPlayResult(game, play, number):
 	return findNumberInRangeDict(number, playMinorRange)
 
 
-def getTimeByPlay(play, result, yards):
+def getTimeByPlay(play, result):
 	timePlay = wiki.getTimeByPlay(play)
 	if timePlay is None:
 		log.warning("Could not get time result for play: {}".format(play))
