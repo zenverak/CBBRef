@@ -203,7 +203,7 @@ def setGamePlayed(gameID):
 def getGamePlayed(gameID):
 	c = dbConn.cursor()
 	result = c.execute('''
-		SELECT LastPlayed
+		SELECT Playclock
 		FROM games
 		WHERE ID = ?
 	''', (gameID,))

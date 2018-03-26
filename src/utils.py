@@ -34,7 +34,6 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		team['3PtAttempted'] = 0
 		team['3PtMade'] = 0
 		team['turnovers'] = 0
-		team['turnoverFumble'] = 0
 		team['FTAttempted'] = 0
 		team['FTMade'] = 0
 		team['posTime'] = 0
@@ -48,6 +47,7 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		team['OffRebound'] = 0
 		team['defRebound'] = 0
 		team['fouls'] = 0
+		team['steals'] = 0
 
 	game = newGameObject(homeTeam, awayTeam)
 	if startTime is not None:
@@ -83,12 +83,13 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		database.addCoach(gameID, user, False)
 		log.debug("Coach added to away: {}".format(user))
 
-	log.debug("Game started, posting coin toss comment")
-	message = "The game has started! {}, you're home. {}, you're away, call **heads** or **tails** in the air.".format(getCoachString(game, 'home'), getCoachString(game, 'away'))
-	sendGameComment(game, message, {'action': 'coin'})
-	log.debug("Comment posted, now waiting on: {}".format(game['waitingId']))
+	log.debug("Game started, posting tip ball comment")
+	message = "The ball is throw in the air! {},  {}, Respond to my message for a TIP number".format(getCoachString(game, 'home'), getCoachString(game, 'away'))
+	sendGameComment(game, message, {'action': 'tip'})
+	log.debug("Comment posted, now waiting on both")
 	updateGameThread(game)
-
+	coaches = [game['home']['coaches'][0], game['away']['coaches'][0]]
+	sendTipNumberMessages(game, coaches)
 	log.debug("Returning game started message")
 	return "Game started. Find it [here]({}).".format(getLinkToThread(threadID))
 
@@ -144,7 +145,8 @@ def renderTime(time):
 
 def get_percent(game, team, stat):
 	'''
-	Used to set percentage. This prevents division by zero cases for beginning of game when a lot of stats will be zero
+	Used to set percentage. This prevents division by zero cases for beginning
+	of game when a lot of stats will be zero
 	'''
 	if stat == '3':
 		if game[team]['3PtAttempted'] == 0:
@@ -159,7 +161,7 @@ def get_percent(game, team, stat):
 			return 0
 		return (game[team]['3PtMade']+game[team]['2PtMade'])/(1.0 *(game[team]['3PtAttempted']+game[team]['2PtAttempted']))
 
-				
+
 
 def renderGame(game):
 	bldr = []
@@ -197,7 +199,7 @@ def renderGame(game):
 		bldr.append("\n\n")
 		bldr.append("Shooting|Shooting %|3pters|3pt %|Free Throws|Free Throw %|Turnovers|Fouls|Bonus|Timeouts\n")
 		bldr.append(":-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:\n")
-		bldr.append("{}/{} shooting|{} %|{}/{}|{} %|{}/{}|{} %|{}|{}|{}|{}".format(
+		bldr.append("{}/{}|{} %|{}/{}|{} %|{}/{}|{} %|{}|{}|{}|{}".format(
 			made,
 			att,
 			get_percent(game, team, 'total'),
@@ -216,8 +218,8 @@ def renderGame(game):
 	bldr.append("Playclock|Half\n")
 	bldr.append(":-:|:-:\n")
 	bldr.append("{}|{}\n".format(
-		renderTime(game['playclock']),
-		game['half']
+		renderTime(game['status']['clock']),
+		game['status']['half']
 		))
 	bldr.append("\n___\n\n")
 	if game['isOverTime']:
@@ -225,20 +227,21 @@ def renderGame(game):
 		bldr.append(":-:|:-:|:-:|:-:|:-:\n")
 	else:
 		bldr.append("Team|H1|H2|Total\n")
-		bldr.append(":-:|:-:|:-:|:-:\n")                
+		bldr.append(":-:|:-:|:-:|:-:\n")
 	for team in ['away', 'home']:
 		bldr.append(flair(game[team]))
 		bldr.append('|')
-		bldr.append(game['score']['halves'][0][team])
+		bldr.append(str(game['score']['halves'][0][team]))
 		bldr.append('|')
-		bldr.append(game['score']['halves'][1][team])
+		bldr.append(str(game['score']['halves'][1][team]))
 		bldr.append('|')
 		if game['isOverTime']:
-			bldr.append(game[team]['overTimeScore'])
+			bldr.append(str(game[team]['overTimeScore']))
 			bldr.append('|')
 			bldr.append(game[team]['1stScore'] + game[team]['2ndScore'] + game[team]['overTimeScore'])
 		else:
-			bldr.append(game['score'][team])
+			bldr.append(str(game['score'][team]))
+		bldr.append('\n')
 	return ''.join(bldr)
 
 
@@ -302,6 +305,15 @@ def sendGameComment(game, message, dataTable=None):
 	log.debug("Game comment sent, now waiting on: {}".format(game['waitingId']))
 	return commentResult
 
+
+def sendTipNumberMessages(game, coaches):
+	reddit.sendMessage(coaches,
+			   'Tip Number',
+			   embedTableInMessage("\n\nReply with a number between **1** and **{0}**, inclusive.".format(globals.maxRange)
+					       , {'action': 'tip'}))
+	messageResult = reddit.getRecentSentMessage()
+	game['waitingId'] = messageResult.fullname
+	log.debug("Tip number sent, now waiting on: {}".format(game['waitingId']))
 
 def getHomeAwayString(isHome):
 	if isHome:
@@ -396,8 +408,8 @@ def getCurrentPlayString(game):
 
 def getWaitingOnString(game):
 	string = "Error, no action"
-	if game['waitingAction'] == 'coin':
-		string = "Waiting on {} for coin toss".format(game[game['waitingOn']]['name'])
+	if game['waitingAction'] == 'tip':
+		string = "Waiting on {} for tip numbers".format(game[game['waitingOn']]['name'])
 	elif game['waitingAction'] == 'defer':
 		string = "Waiting on {} for receive/defer".format(game[game['waitingOn']]['name'])
 	elif game['waitingAction'] == 'play':
@@ -523,9 +535,9 @@ def newGameObject(home, away):
 		  'halfType': 'normal', 'overtimePossession': None}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
 	game = {'home': home, 'away': away, 'drives': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
-		'waitingAction': 'coin', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",
+		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",
 		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
-		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False}
+		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':None, 'awayTip':None, 'botTip':None}
 	return game
 
 

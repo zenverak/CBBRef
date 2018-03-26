@@ -111,65 +111,26 @@ def processMessageCoin(game, isHeads, author):
 		message = "{}, {} won the toss, {}".format(utils.getCoachString(game, 'home'), game['home']['name'], questionString)
 		return True, utils.embedTableInMessage(message, {'action': 'defer'})
 
-
-def processMessageDefer(game, isDefer, author):
-	log.debug("Processing defer message: {}".format(str(isDefer)))
-
-	authorHomeAway = utils.getHomeAwayString(utils.isCoachHome(game, author))
-	if utils.isGameOvertime(game):
-		if isDefer:
-			log.debug("User deferred, {} is attacking".format(utils.reverseHomeAway(authorHomeAway)))
-
-			state.setStateOvertimeDrive(game, utils.reverseHomeAway(authorHomeAway))
-			game['receivingNext'] = authorHomeAway
-			game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
-			game['dirty'] = True
-			utils.sendDefensiveNumberMessage(game)
-
-			return True, "{} deferred and will attack next. Overtime has started!\n\n{}\n\n{}".format(
-				game[authorHomeAway]['name'],
-			    utils.getCurrentPlayString(game),
-			    utils.getWaitingOnString(game))
-		else:
-			log.debug("User elected to attack, {} is attacking".format(authorHomeAway))
-
-			state.setStateOvertimeDrive(game, authorHomeAway)
-			game['receivingNext'] = utils.reverseHomeAway(authorHomeAway)
-			game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
-			game['dirty'] = True
-			utils.sendDefensiveNumberMessage(game)
-
-			return True, "{} elected to attack. Overtime has started!\n\n{}\n\n{}".format(
-				game[authorHomeAway]['name'],
-			    utils.getCurrentPlayString(game),
-			    utils.getWaitingOnString(game))
+def processMessageTip(game, message):
+	number = re.findall('(\d+)', message.body)
+	log.debug("Processing tip ball")
+	author = str(message.author.lower())
+	log.debug("")
+	if author in game['away']['coaches']:
+		game['awayTip'] = number
+		if game['homeTip'] != '':
+			return True, 'got both numbers'
+		return True,"Got aways tip number"
+	elif author in game['home']['coaches']:
+		game['homeTip'] = number
+		if game['awayTip'] != '':
+			return True, 'got both numbers'
+		return True, "Got home's tip number"
 	else:
-		if isDefer:
-			log.debug("User deferred, {} is receiving".format(utils.reverseHomeAway(authorHomeAway)))
+		return False,  'ooops'
 
-			state.setStateTouchback(game, utils.reverseHomeAway(authorHomeAway))
-			game['receivingNext'] = authorHomeAway
-			game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
-			game['dirty'] = True
-			utils.sendDefensiveNumberMessage(game)
 
-			return True, "{} deferred and will receive the ball in the second half. The game has started!\n\n{}\n\n{}".format(
-				game[authorHomeAway]['name'],
-			    utils.getCurrentPlayString(game),
-			    utils.getWaitingOnString(game))
-		else:
-			log.debug("User elected to receive, {} is receiving".format(authorHomeAway))
 
-			state.setStateTouchback(game, authorHomeAway)
-			game['receivingNext'] = utils.reverseHomeAway(authorHomeAway)
-			game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
-			game['dirty'] = True
-			utils.sendDefensiveNumberMessage(game)
-
-			return True, "{} elected to receive. The game has started!\n\n{}\n\n{}".format(
-				game[authorHomeAway]['name'],
-			    utils.getCurrentPlayString(game),
-			    utils.getWaitingOnString(game))
 
 
 def processMessageDefenseNumber(game, message, author):
@@ -333,6 +294,7 @@ def processMessageAbandonGame(body):
 
 
 def processMessage(message):
+	print( message)
 	if isinstance(message, praw.models.Message):
 		isMessage = True
 		log.debug("Processing a message from /u/{} : {}".format(str(message.author), message.id))
@@ -344,6 +306,7 @@ def processMessage(message):
 	success = None
 	updateWaiting = True
 	dataTable = None
+	resultMessage = None
 
 	if message.parent_id is not None and (message.parent_id.startswith("t1") or message.parent_id.startswith("t4")):
 		if isMessage:
@@ -352,6 +315,7 @@ def processMessage(message):
 			parent = reddit.getComment(message.parent_id[3:])
 
 		if parent is not None and str(parent.author).lower() == globals.ACCOUNT_NAME:
+
 			dataTable = utils.extractTableFromMessage(parent.body)
 			if dataTable is not None:
 				if 'action' not in dataTable:
@@ -381,30 +345,10 @@ def processMessage(message):
 				updateWaiting = False
 
 			else:
-				if dataTable['action'] == 'coin' and not isMessage:
-					keywords = ['heads', 'tails']
-					keyword = utils.findKeywordInMessage(keywords, body)
-					if keyword == "heads":
-						success, response = processMessageCoin(game, True, str(message.author))
-					elif keyword == "tails":
-						success, response = processMessageCoin(game, False, str(message.author))
-					elif keyword == 'mult':
-						success = False
-						response = "I found both {} in your message. Please reply with just one of them.".format(' and '.join(keywords))
+				##this is where we start the game basically
+				if dataTable['action'] == 'tip' and not isMessage:
+					success, response = processMessageTip(game, message)
 
-				elif dataTable['action'] == 'defer' and not isMessage:
-					if utils.isGameOvertime(game):
-						keywords = ['defend', 'attack']
-					else:
-						keywords = ['defer', 'receive']
-					keyword = utils.findKeywordInMessage(keywords, body)
-					if keyword == "defer" or keyword == "defend":
-						success, response = processMessageDefer(game, True, str(message.author))
-					elif keyword == "receive" or keyword == "attack":
-						success, response = processMessageDefer(game, False, str(message.author))
-					elif keyword == 'mult':
-						success = False
-						response = "I found both {} in your message. Please reply with just one of them.".format(' and '.join(keywords))
 
 				elif dataTable['action'] == 'play' and isMessage:
 					success, response = processMessageDefenseNumber(game, body, str(message.author))

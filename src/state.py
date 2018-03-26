@@ -233,7 +233,7 @@ def executePlay(game, play, number, numberMessage):
 			else:
 				log.debug("failed free throw")
 				resultMessage =  "The free throw has cursed you. Suffer."
-				
+
 
 			database.clearDefensiveNumber(game['dataID'])
 
@@ -268,7 +268,7 @@ def executePlay(game, play, number, numberMessage):
 							utils.addStat(game,'3PtAttempted',1,startingPossessionHomeAway)
 							utils.addStat(game,'3PtMade',1,startingPossessionHomeAway)
 						log.debug("Result is a gain of {} points".format(result['points']))
-						
+
 
 				if success and play == 'fieldGoal':
 					utils.addStat(game, 'fieldGoalsAttempted', 1)
