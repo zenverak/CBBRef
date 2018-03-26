@@ -44,9 +44,10 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		team['1stScore'] = 0
 		team['2ndScore'] = 0
 		team['overTimeScore'] = 0
-		team['bonus'] = N
+		team['bonus'] = 'N'
 		team['OffRebound'] = 0
 		team['defRebound'] = 0
+		team['fouls'] = 0
 
 	game = newGameObject(homeTeam, awayTeam)
 	if startTime is not None:
@@ -141,6 +142,24 @@ def flair(team):
 def renderTime(time):
 	return "{}:{}".format(str(math.trunc(time / 60)), str(time % 60).zfill(2))
 
+def get_percent(game, team, stat):
+	'''
+	Used to set percentage. This prevents division by zero cases for beginning of game when a lot of stats will be zero
+	'''
+	if stat == '3':
+		if game[team]['3PtAttempted'] == 0:
+			return 0
+		return game[team]['3PtMade']/(1.0 *game[team]['3PtAttmpted'])
+	elif stat == 'free':
+		if game[team]['FTAttempted'] == 0:
+			return 0
+		return game[team]['FTMade']/(1.0 *game[team]['FTAttmpted'])
+	else:
+		if game[team]['3PtAttempted'] == 0 and game[team]['2PtAttempted']==0:
+			return 0
+		return (game[team]['3PtMade']+game[team]['2PtMade'])/(1.0 *(game[team]['3PtAttempted']+game[team]['2PtAttempted']))
+
+				
 
 def renderGame(game):
 	bldr = []
@@ -181,14 +200,14 @@ def renderGame(game):
 		bldr.append("{}/{} shooting|{} %|{}/{}|{} %|{}/{}|{} %|{}|{}|{}|{}".format(
 			made,
 			att,
-			made/(att*1.0),
-			game[team]['3ptMade'],
+			get_percent(game, team, 'total'),
+			game[team]['3PtMade'],
 			game[team]['3PtAttempted'],
-			game[team]['3ptMade']/(1.0 *game[team]['3PtAttmpted']),
+			get_percent(game, team, '3'),
 			game[team]['FTMade'],
 			game[team]['FTAttempted'],
-			game[team]['FTMade']/(1.0*game[team]['FTAttempted']),
-			game[team]['turnover'],
+			get_percent(game, team, 'free'),
+			game[team]['turnovers'],
 			game[team]['fouls'],
 			game[team]['bonus'],
 			game[team]['timeouts']))

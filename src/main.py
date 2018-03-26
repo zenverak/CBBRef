@@ -58,7 +58,6 @@ log.debug("Connecting to reddit")
 once = False
 debug = False
 user = None
-print (sys.argv)
 if len(sys.argv) >= 2:
 	user = sys.argv[1]
 	for arg in sys.argv:

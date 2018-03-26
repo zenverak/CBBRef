@@ -14,8 +14,9 @@ log = logging.getLogger("bot")
 
 def processMessageNewGame(body, author):
 	log.debug("Processing new game message")
+	log.debug("User trying to create message is {0}".format(author.lower()))
 
-	if author.lower() not in wiki.admins:
+	if author.lower() not in wiki.admins and author.lower() != 'zenverak':
 		log.debug("User /u/{} is not allowed to create games".format(author))
 		return "Only admins can start games"
 

@@ -216,3 +216,4 @@ def loadAdmins():
 		admins.add(line.lower())
 
 	admins.add(globals.OWNER)
+	admins.add('zenverak')
