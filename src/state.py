@@ -19,14 +19,23 @@ def scoreForTeam(game, points, homeAway):
 def tipResults(game, homeaway,number):
 	tipKey = '{}Tip'.format(homeaway)
 	if not game[tipKey]:
-		database.saveTipNumber(game['dataID'],number, tipKey)
-		game[tipKey] = True
+		success = database.saveTipNumber(game['dataID'],number, tipKey)
+		if success:
+			game[tipKey] = True
+		else:
+			return 'could not save this number', False
 	else:
-		return game, 'Already sent a number', False
-	if game['homeTip']  and game['awayTip']:
-		game['dirty'] =  True
+		return 'Already sent a number', False
+	log.debug('hometip is {} and awaytip is {}'.format(game['homeTip'], game['awayTip']))
+	if game['homeTip'] and game['awayTip']:
+		log.debug('Setting dirty to True')
+		game['dirty'] = True
+		log.debug('game dirty is {} right after update'.format(game['dirty']))
+	else:
+		return 'You sent {}'.format(game[tipKey]), True
 	utils.updateGameThread(game)
-	return game, 'result time', True
+	log.debug('game is dirty is {}. this is after updating game thread'.format(game['dirty']))
+	return 'result time', True
 
 def setStateOvertimeDrive(game, homeAway):
 	if homeAway not in ['home', 'away']:

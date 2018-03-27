@@ -84,31 +84,46 @@ def processMessageNewGame(body, author):
 def processMessageTip(game, message):
 	number = re.findall('(\d+)', message.body)[0]
 	author = str(message.author).lower()
-	log.debug("Processing tip ball for /u/{} whose number was {}. Game is dirty is {}".format(author, number,game['dirty']))
+	log.debug('author is {}'.format(author))
+	log.debug('number is {}'.format(number))
+	log.debug("Processing tip ball where game is dirty is {}".format(game['dirty']))
+	log.debug('is author in {} or {}'.format(game['away']['coaches'], game['home']['coaches']))
 	if author in game['away']['coaches']:
-		game,message, worked = state.tipResults(game, 'away', number)
+		message, worked = state.tipResults(game, 'away', number)
 	elif author in game['home']['coaches']:
-		game,message, worked = state.tipResults(game, 'home', number)
+		message, worked = state.tipResults(game, 'home', number)
 	else:
 		return False,  'ooops'
-	if game['awayTip'] != '' and game['homeTip'] != '' and game['dirty']:
-		awayTip = database.getTipById(game['dataID'],'awayTip')
-		homeTip = database.getTipById(game['dataID'],'homeTip')
-		tipWinner = utils.getTipWinner(awayTip, homeTip)
+	log.debug('Now checking if game is dirty and tip off is complete')
+	log.debug('Dirty is {}'.format(game['dirty']))
+	if game['awayTip'] and game['homeTip']:
+		awayTip = int(database.getTipById(game['dataID'],'awayTip'))
+		homeTip = int(database.getTipById(game['dataID'],'homeTip'))
+		botTip = utils.rngNumber()
+		tipWinner = utils.getTipWinner(awayTip, homeTip, botTip)
 		game['waitingOn'] =  utils.reverseHomeAway(tipWinner)
 		log.debug("sending initial defensive play comment to {}".format(game['waitingOn']))
 		resultMessage =  "/u/{} has won the tippoff . /u/{} Will get a DM to start the action. \n \
 						away tip number: {}\nhome tip number: {}\n bot tip number: {}".format(
 						game[tipWinner]['coaches'][0],
 						game[game['waitingOn']]['coaches'][0],
-						game['awayTip'],
-						game['homeTip'],
-						game['botTip']
+						awayTip,
+						homeTip,
+						botTip
+						)
+		defMessage = "/u/{} has won the tippoff . /u/{} Will get a DM to start the action. \n \
+						away tip number: {}\nhome tip number: {}\n bot tip number: {}".format(
+						game[tipWinner]['coaches'][0],
+						game[game['waitingOn']]['coaches'][0],
+						awayTip,
+						homeTip,
+						botTip
 						)
 
 		utils.sendDefensiveNumberMessage(game)
 
 		return True, resultMessage
+	return worked, message
 
 
 def processMessageDefenseNumber(game, message, author):
@@ -302,6 +317,7 @@ def processMessage(message):
 	game = None
 	if dataTable is not None:
 		game = utils.getGameByUser(author)
+		log.debug('game is {}'.format(game))
 		if game is not None:
 			utils.setLogGameID(game['thread'], game['dataID'])
 			print('the action is {}'.format(dataTable['action']))
@@ -325,6 +341,8 @@ def processMessage(message):
 				if dataTable['action'] == 'tip' and isMessage:
 					log.debug('About to process tip message from {}'.format(str(message.author)))
 					success, response = processMessageTip(game, message)
+					if success:
+						game['dirty'] = True
 
 
 				elif dataTable['action'] == 'play' and isMessage:

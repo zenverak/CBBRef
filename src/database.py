@@ -78,11 +78,12 @@ def addCoach(gameId, coach, home):
 
 def getTipById(ID,type_):
 	c = dbConn.cursor()
-	result = c.execute('''
-		SELECT ?
+	execString = '''
+		SELECT {}
 		FROM games
-		WHERE ID = ?
-	''', (type_,coach.lower(),))
+		WHERE ID = {}
+	'''.format(type_, ID,)
+	result = c.execute(execString)
 	return result.fetchone()[0]
 
 
@@ -94,6 +95,7 @@ def saveTipNumber(gameID, number,type_):
 		WHERE ID = {}
 	'''.format(type_, int(number), gameID,))
 	dbConn.commit()
+	return True
 
 def getGameByCoach(coach):
 	c = dbConn.cursor()

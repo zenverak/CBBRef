@@ -270,10 +270,10 @@ def getGameByThread(thread):
 	return extractTableFromMessage(threadText)
 
 
-def getTipWinner(game):
-	h = game['homeTip']
-	a = game['awayTip']
-	b = rngNumber()
+def getTipWinner(awayTip,homeTip,botTip):
+	a = awayTip
+	h = homeTip
+	b = botTip
 	log.debug('homeTip is {}\nawayTip is {}\nbotTipis {}'.format(h,a,b))
 	hDiff = abs(b - h)
 	aDiff = abs(b - a)
@@ -418,16 +418,14 @@ def getNthWord(number):
 
 
 def getCurrentPlayString(game):
-	if game['status']['conversion']:
+	if not game['status']['tipped']:
+		game['status']['tipped'] = True
+		return "You just won the tip."
+	if game['status']['scored']:
 		return "{} just scored.".format(game[game['status']['possession']]['name'])
 	else:
-		return "It's {} and {} on the {}.".format(
-			getDownString(game['status']['down']),
-			"goal" if game['status']['location'] >= 90 else game['status']['yards'],
-			getLocationString(game['status']['location'],
-			game[game['status']['possession']]['name'],
-			game[reverseHomeAway(game['status']['possession'])]['name'])
-		)
+		return "Rebound. It is your ball"
+		
 
 
 def getWaitingOnString(game):
@@ -456,8 +454,8 @@ def sendDefensiveNumberMessage(game):
 	log.debug("Sending get defence number to {}".format(getCoachString(game, defenseHomeAway)))
 	reddit.sendMessage(game[defenseHomeAway]['coaches'],
 			   "{} vs {}".format(game['away']['name'], game['home']['name']),
-			   embedTableInMessage("{}\n\nReply with a number between **1** and **{0}**, inclusive.".format(globals.maxRange)
-					       .format(getCurrentPlayString(game)), {'action': 'play'}))
+			   embedTableInMessage("{}\n\nReply with a number between **1** and **{}**, inclusive.".format(getCurrentPlayString(game), globals.maxRange)
+					       , {'action': 'play'}))
 	messageResult = reddit.getRecentSentMessage()
 	game['waitingId'] = messageResult.fullname
 	log.debug("Defensive number sent, now waiting on: {}".format(game['waitingId']))
@@ -563,9 +561,9 @@ def updateGameTimes(game):
 def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home', 'down': 1, 'yards': 10,
 		  'timeouts': {'home': 4, 'away': 4}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'free': False, 'frees': 0,
-		  'halfType': 'normal', 'overtimePossession': None}
+		  'halfType': 'normal', 'overtimePossession': None, 'tipped':True, 'scored':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
-	game = {'home': home, 'away': away, 'drives': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
+	game = {'home': home, 'away': away, 'poss': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
 		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",
 		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
 		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':False, 'awayTip':False}
