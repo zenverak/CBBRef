@@ -197,6 +197,7 @@ def getTeamByCoach(coach):
 
 def getPlay(play):
 	if play in plays:
+		log.debug('play {} was in plays'.format(play))
 		return plays[play]
 	else:
 		return None

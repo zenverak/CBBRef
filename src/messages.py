@@ -89,9 +89,9 @@ def processMessageTip(game, message):
 	log.debug("Processing tip ball where game is dirty is {}".format(game['dirty']))
 	log.debug('is author in {} or {}'.format(game['away']['coaches'], game['home']['coaches']))
 	if author in game['away']['coaches']:
-		message, worked = state.tipResults(game, 'away', number)
+		resultMessage, worked = state.tipResults(game, 'away', number)
 	elif author in game['home']['coaches']:
-		message, worked = state.tipResults(game, 'home', number)
+		resultMessage, worked = state.tipResults(game, 'home', number)
 	else:
 		return False,  'ooops'
 	log.debug('Now checking if game is dirty and tip off is complete')
@@ -111,19 +111,16 @@ def processMessageTip(game, message):
 						homeTip,
 						botTip
 						)
-		defMessage = "/u/{} has won the tippoff . /u/{} Will get a DM to start the action. \n \
-						away tip number: {}\nhome tip number: {}\n bot tip number: {}".format(
-						game[tipWinner]['coaches'][0],
-						game[game['waitingOn']]['coaches'][0],
-						awayTip,
-						homeTip,
-						botTip
-						)
 
-		utils.sendDefensiveNumberMessage(game)
+		defMessage = "/u/{} has won the tippoff . Please send me a number to start the game getween **1** and **{}**".format(game[tipWinner]['coaches'][0],globals.maxRange)
+		log.debug('defensive message is {}'.format(defMessage))
+		game['dirty'] =  True
+
+		utils.sendDefensiveNumberMessage(game, defMessage)
+		game['waitingAction'] = 'play'
 
 		return True, resultMessage
-	return worked, message
+	return worked, resultMessage
 
 
 def processMessageDefenseNumber(game, message, author):
@@ -343,6 +340,7 @@ def processMessage(message):
 					success, response = processMessageTip(game, message)
 					if success:
 						game['dirty'] = True
+					log.debug("The tip message's success was {} and the message's content reads {}".format(success, response))
 
 
 				elif dataTable['action'] == 'play' and isMessage:
@@ -370,10 +368,11 @@ def processMessage(message):
 			response = utils.embedTableInMessage(response, dataTable)
 			if updateWaiting and game is not None:
 				game['waitingId'] = 'return'
+		log.debug("About to send reply Message")
 		resultMessage = reddit.replyMessage(message, response)
+		log.debug("result of sending reply message was {}".format(resultMessage))
 		if resultMessage is None:
 			log.warning("Could not send message")
-
 		elif game is not None and game['waitingId'] == 'return':
 			game['waitingId'] = resultMessage.fullname
 			game['dirty'] = True
@@ -385,7 +384,6 @@ def processMessage(message):
 			                    "I couldn't understand your message, please try again or message /u/zenverak if you need help.")
 		if resultMessage is None:
 			log.warning("Could not send message")
-
 	if game is not None and game['dirty']:
 		log.debug("Game is dirty, updating thread")
 		utils.updateGameThread(game)

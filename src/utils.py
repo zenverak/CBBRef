@@ -265,6 +265,7 @@ def rngNumber():
 	##randint is inclusive on both ends
 	return random.randint(1, globals.maxRange)
 
+
 def getGameByThread(thread):
 	threadText = reddit.getSubmission(thread).selftext
 	return extractTableFromMessage(threadText)
@@ -281,6 +282,7 @@ def getTipWinner(awayTip,homeTip,botTip):
 		return 'home'
 	else:
 		return 'away'
+
 
 def getGameByUser(user):
 	dataGame = database.getGameByCoach(user)
@@ -324,6 +326,7 @@ def sendGameMessage(isHome, game, message, dataTable):
 
 
 def sendGameComment(game, message, dataTable=None):
+
 	commentResult = reddit.replySubmission(game['thread'], embedTableInMessage(message, dataTable))
 	game['waitingId'] = commentResult.fullname
 	log.debug("Game comment sent, now waiting on: {}".format(game['waitingId']))
@@ -339,6 +342,7 @@ def sendTipNumberMessages(game, coaches):
 	messageResult = reddit.getRecentSentMessage()
 	game['waitingId'] = messageResult.fullname
 	log.debug("Tip number sent, now waiting on: {}".format(game['waitingId']))
+
 
 def tipResults(game, homeaway,number):
 	tipKey = '{}Tip'.format(homeaway)
@@ -375,8 +379,9 @@ def getRange(rangeString):
 
 def isGameWaitingOn(game, user, action, messageId):
 	log.debug('checking on if we are waiting for {} with action {}'.format(user, action))
+	log.debug('waitingAction is {}'.format(game['waitingAction']))
 	if game['waitingAction'] == 'tip' and action == 'tip':
-		log.debug('')
+		log.debug('I am waiting on tip')
 		return None
 	if game['waitingAction'] != action:
 		log.debug("Not waiting on {}: {}".format(action, game['waitingAction']))
@@ -425,7 +430,7 @@ def getCurrentPlayString(game):
 		return "{} just scored.".format(game[game['status']['possession']]['name'])
 	else:
 		return "Rebound. It is your ball"
-		
+
 
 
 def getWaitingOnString(game):
@@ -449,14 +454,20 @@ def getWaitingOnString(game):
 	return string
 
 
-def sendDefensiveNumberMessage(game):
+def sendDefensiveNumberMessage(game, mess=None, recpt=None):
 	defenseHomeAway = reverseHomeAway(game['status']['possession'])
-	log.debug("Sending get defence number to {}".format(getCoachString(game, defenseHomeAway)))
-	reddit.sendMessage(game[defenseHomeAway]['coaches'],
+	log.debug("Sending get defense number message to {}".format(getCoachString(game, defenseHomeAway)))
+	if mess is not None:
+		reddit.sendMessage(game[game['waitingOn']]['coaches'][0], 'Tip result',
+			   embedTableInMessage(mess, {'action': 'play'}))
+	else:
+		reddit.sendMessage(game[defenseHomeAway]['coaches'],
 			   "{} vs {}".format(game['away']['name'], game['home']['name']),
 			   embedTableInMessage("{}\n\nReply with a number between **1** and **{}**, inclusive.".format(getCurrentPlayString(game), globals.maxRange)
 					       , {'action': 'play'}))
+
 	messageResult = reddit.getRecentSentMessage()
+	log.debug('messageResult is {}'.format(messageResult))
 	game['waitingId'] = messageResult.fullname
 	log.debug("Defensive number sent, now waiting on: {}".format(game['waitingId']))
 
@@ -511,18 +522,7 @@ def findKeywordInMessage(keywords, message):
 
 
 def listSuggestedPlays(game):
-	if game['status']['conversion']:
-		return "**PAT** or **two point**"
-	else:
-		if game['status']['down'] == 4:
-			if game['status']['location'] > 62:
-				return "**field goal**, or go for it with **run** or **pass**"
-			elif game['status']['location'] > 57:
-				return "**punt** or **field goal**, or go for it with **run** or **pass**"
-			else:
-				return "**punt**, or go for it with **run** or **pass**"
-		else:
-			return "**run** or **pass**"
+	return 'Play'
 
 
 def buildMessageLink(recipient, subject, content):

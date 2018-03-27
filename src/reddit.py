@@ -42,6 +42,7 @@ def sendMessage(recipients, subject, message):
 		recipients = [recipients]
 	success = None
 	for recipient in recipients:
+		log.debug('Inside sendMessage about to send a message to {} with subject of {}'.format(recipient, subject))
 		try:
 			success = reddit.redditor(recipient).message(
 				subject=subject,
@@ -55,11 +56,13 @@ def sendMessage(recipients, subject, message):
 			log.warning(traceback.format_exc())
 			success = None
 
-
+	if success:
+		log.debug('Message was sent')
 	return success
 
 
 def replySubmission(id, message):
+
 	try:
 		submission = getSubmission(id)
 		resultComment = submission.reply(message)

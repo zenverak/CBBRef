@@ -98,7 +98,9 @@ def findNumberInRangeDict(number, dict):
 
 
 def getPlayResult(game, play, number):
+	log.debug("Get Wiki data for play {}".format(play))
 	playDict = wiki.getPlay(play)
+	log.debug('PlayDict is {}'.format(playDict))
 	if playDict is None:
 		log.warning("{} is not a valid play".format(play))
 		return None
@@ -224,7 +226,6 @@ def updateTime(game, play, result, yards, offenseHomeAway):
 	return "The play took {} seconds, {}".format(timeOffClock, timeMessage)
 
 
-
 def executePlay(game, play, number, numberMessage):
 	startingPossessionHomeAway = game['status']['possession']
 	actualResult = None
@@ -237,15 +238,12 @@ def executePlay(game, play, number, numberMessage):
 			log.debug("Trying to shoot a free throw play, but didn't have a number")
 			resultMessage = numberMessage
 			success = False
-
 		elif number > -1:
 			game['status']['frees'] -= 1
 			if game['status']['frees'] == 0:
 				game['status']['free'] = False
 			utils.addStat(game,'FTAttempted',1,startingPossessionHomeAway)
 			numberResult, diffMessage = getNumberDiffForGame(game, number)
-
-
 			if result['result'] == 'free':
 				log.debug("Successful Free Throw")
 				resultMessage = "The Free throw was successful"
@@ -254,10 +252,7 @@ def executePlay(game, play, number, numberMessage):
 			else:
 				log.debug("failed free throw")
 				resultMessage =  "The free throw has cursed you. Suffer."
-
-
 			database.clearDefensiveNumber(game['dataID'])
-
 		else:
 			resultMessage = "It looks like /]you're trying to get the extra point after a touchdown, but this isn't a valid play"
 			success = False
@@ -267,10 +262,8 @@ def executePlay(game, play, number, numberMessage):
 				log.debug("Trying to execute a normal play, but didn't have a number")
 				resultMessage = numberMessage
 				success = False
-
 			else:
 				numberResult, diffMessage = getNumberDiffForGame(game, number)
-
 				log.debug("Executing normal play: {}".format(play))
 				result = getPlayResult(game, play, numberResult)
 				if result['result'] == 'score':
@@ -289,28 +282,19 @@ def executePlay(game, play, number, numberMessage):
 							utils.addStat(game,'3PtAttempted',1,startingPossessionHomeAway)
 							utils.addStat(game,'3PtMade',1,startingPossessionHomeAway)
 						log.debug("Result is a gain of {} points".format(result['points']))
-
-
 				if success and play == 'fieldGoal':
 					utils.addStat(game, 'fieldGoalsAttempted', 1)
-
 				database.clearDefensiveNumber(game['dataID'])
-
-		elif play in globals.timePlays:
-			pass
-
 		else:
 			resultMessage = "{} isn't a valid play at the moment".format(play)
 			success = False
-
 	messages = [resultMessage]
 	if actualResult is not None:
-		if timeMessage is not None:
+		if timeMessage is None:
 			timeMessage = updateTime(game, play, actualResult, yards, startingPossessionHomeAway)
-
 		messages.append(timeMessage)
-
 	if diffMessage is None:
 		messages.append(diffMessage)
-
+	log.debug("Finishing execution of play")
+	log.debug("messages: resultMessage: {}, timeMessage:{}, diffMessage:{}".format(resultMessage, timeMessage, diffMessage))
 	return success, '\n\n'.join(messages)
