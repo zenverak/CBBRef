@@ -17,6 +17,8 @@ def init():
 			ID INTEGER PRIMARY KEY AUTOINCREMENT,
 			ThreadID VARCHAR(80) NOT NULL,
 			DefenseNumber INTEGER,
+			homeTip INTEGER,
+			awayTip INTEGER,
 			Deadline TIMESTAMP NOT NULL DEFAULT (DATETIME(CURRENT_TIMESTAMP, '+10 days')),
 			Playclock TIMESTAMP NOT NULL DEFAULT (DATETIME(CURRENT_TIMESTAMP, '+24 hours')),
 			Complete BOOLEAN NOT NULL DEFAULT 0,
@@ -73,6 +75,25 @@ def addCoach(gameId, coach, home):
 	dbConn.commit()
 	return True
 
+
+def getTipById(ID,type_):
+	c = dbConn.cursor()
+	result = c.execute('''
+		SELECT ?
+		FROM games
+		WHERE ID = ?
+	''', (type_,coach.lower(),))
+	return result.fetchone()[0]
+
+
+def saveTipNumber(gameID, number,type_):
+	c = dbConn.cursor()
+	c.execute('''
+		UPDATE games
+		SET {} = {}
+		WHERE ID = {}
+	'''.format(type_, int(number), gameID,))
+	dbConn.commit()
 
 def getGameByCoach(coach):
 	c = dbConn.cursor()

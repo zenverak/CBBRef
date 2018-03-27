@@ -16,7 +16,17 @@ def scoreForTeam(game, points, homeAway):
 	game['score']['halves'][game['status']['half'] - 1][homeAway] += points
 	game[homeAway]['halves'][game['status']['half'] - 1][homeAway] += points
 
-
+def tipResults(game, homeaway,number):
+	tipKey = '{}Tip'.format(homeaway)
+	if not game[tipKey]:
+		database.saveTipNumber(game['dataID'],number, tipKey)
+		game[tipKey] = True
+	else:
+		return game, 'Already sent a number', False
+	if game['homeTip']  and game['awayTip']:
+		game['dirty'] =  True
+	utils.updateGameThread(game)
+	return game, 'result time', True
 
 def setStateOvertimeDrive(game, homeAway):
 	if homeAway not in ['home', 'away']:

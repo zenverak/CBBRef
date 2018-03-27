@@ -273,7 +273,7 @@ def getGameByThread(thread):
 def getTipWinner(game):
 	h = game['homeTip']
 	a = game['awayTip']
-	b = game['botTip']
+	b = rngNumber()
 	log.debug('homeTip is {}\nawayTip is {}\nbotTipis {}'.format(h,a,b))
 	hDiff = abs(b - h)
 	aDiff = abs(b - a)
@@ -340,8 +340,15 @@ def sendTipNumberMessages(game, coaches):
 	game['waitingId'] = messageResult.fullname
 	log.debug("Tip number sent, now waiting on: {}".format(game['waitingId']))
 
-def tipResults(game, number):
-
+def tipResults(game, homeaway,number):
+	tipKey = '{}Tip'.format(homeaway)
+	if game[tipKey] == '':
+		game[tipKey] = number
+	else:
+		return game, 'Already sent a number', False
+	if game['homeTip'] != '' and game['awayTip'] != '':
+		game['dirty'] =  True
+	return game, 'result time', True
 
 def getHomeAwayString(isHome):
 	if isHome:
@@ -561,5 +568,5 @@ def newGameObject(home, away):
 	game = {'home': home, 'away': away, 'drives': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
 		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",
 		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
-		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':'', 'awayTip':'', 'botTip': rngNumber()}
+		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':False, 'awayTip':False}
 	return game
