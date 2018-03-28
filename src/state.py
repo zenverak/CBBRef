@@ -88,6 +88,7 @@ def findNumberInRangeDict(number, dict):
 			continue
 
 		if rangeStart <= number <= rangeEnd:
+			log.debug('found the dict[key] and it is {}'.format(dict[key]))
 			return dict[key]
 
 	log.warning("Could not find number in dict")
@@ -110,11 +111,13 @@ def getPlayResult(game, play, number):
 		defense = game[utils.reverseHomeAway(game['status']['possession'])]['defense']
 		log.debug("Movement play offense, defense: {} : {}".format(offense, defense))
 		playMajorRange = playDict[offense][defense]
+	elif play == 'freeThrows':
+		pass
+
 	else:
 		playMajorRange = playDict
 
-	playMinorRange = findNumberInRangeDict(100 - game['status']['location'], playMajorRange)
-	return findNumberInRangeDict(number, playMinorRange)
+	return findNumberInRangeDict(number, playMajorRange)
 
 
 def getTimeByPlay(play, result):
@@ -128,25 +131,7 @@ def getTimeByPlay(play, result):
 		return None
 
 	timeObject = timePlay[result]
-	if result == "gain":
-		closestObject = None
-		currentDifference = 100
-		for yardObject in timeObject:
-			difference = abs(yardObject['yards'] - yards)
-			if difference < currentDifference:
-				currentDifference = difference
-				closestObject = yardObject
 
-		if closestObject is None:
-			log.warning("Could not get any yardObject")
-			return None
-
-		log.debug("Found a valid time object in gain, returning: {}".format(closestObject['time']))
-		return closestObject['time']
-
-	else:
-		log.debug("Found a valid time object in {}, returning: {}".format(result, timeObject['time']))
-		return timeObject['time']
 
 
 def updateTime(game, play, result, yards, offenseHomeAway):
@@ -233,6 +218,7 @@ def executePlay(game, play, number, numberMessage):
 	diffMessage = None
 	success = True
 	timeMessage = None
+	fouled = False
 	if game['status']['free']:
 		if number == -1:
 			log.debug("Trying to shoot a free throw play, but didn't have a number")
@@ -240,8 +226,7 @@ def executePlay(game, play, number, numberMessage):
 			success = False
 		elif number > -1:
 			game['status']['frees'] -= 1
-			if game['status']['frees'] == 0:
-				game['status']['free'] = False
+
 			utils.addStat(game,'FTAttempted',1,startingPossessionHomeAway)
 			numberResult, diffMessage = getNumberDiffForGame(game, number)
 			if result['result'] == 'free':
@@ -252,12 +237,14 @@ def executePlay(game, play, number, numberMessage):
 			else:
 				log.debug("failed free throw")
 				resultMessage =  "The free throw has cursed you. Suffer."
+			if game['status']['frees'] == 0:
+				game['status']['free'] = False
 			database.clearDefensiveNumber(game['dataID'])
 		else:
 			resultMessage = "It looks like /]you're trying to get the extra point after a touchdown, but this isn't a valid play"
 			success = False
 	else:
-		if play in globals.scorePlays:
+		if play in globals.offPlays:
 			if number == -1:
 				log.debug("Trying to execute a normal play, but didn't have a number")
 				resultMessage = numberMessage
@@ -266,24 +253,51 @@ def executePlay(game, play, number, numberMessage):
 				numberResult, diffMessage = getNumberDiffForGame(game, number)
 				log.debug("Executing normal play: {}".format(play))
 				result = getPlayResult(game, play, numberResult)
-				if result['result'] == 'score':
+				playResultName = result['result']
+				pointsTriedFor = re.search('2|3', playResultName).group(0)
+				if playResultName in globals.pointResults :
 					if 'points' not in result:
 						log.warning("Result is a score, but I couldn't find any points")
 						resultMessage = "Result of play is a number of points, but something went wrong and I couldn't find what number"
 						success = False
 					else:
+						if playResultName in globals.foulResults:
+							##After this play we will be waiting on the current devensive
+							##team since they will have to send a defensive number
+							fouled =  True
+						else:
+							game['status']['possession'] = utils.reverseHomeAway(game['status']['possession'])
+
 						points = result['points']
+						if fouled:
+							resultMessage = resultMessage + ' AND ONE. Player is fouled.'
+						resultMessage = 'Basket good for {} points.'.format(points)
 						if points ==  2:
-							scoreTwoPoints(game, startingPossessionHomeAway)
-							utils.addStat(game,'2PtAttempted',1,startingPossessionHomeAway)
-							utils.addStat(game,'2PtMade',1,startingPossessionHomeAway)
+							sub2Pt(game, True, fouled, points)
 						elif points == 3:
-							score3Points(game, startingPossessionHomeAway)
-							utils.addStat(game,'3PtAttempted',1,startingPossessionHomeAway)
-							utils.addStat(game,'3PtMade',1,startingPossessionHomeAway)
-						log.debug("Result is a gain of {} points".format(result['points']))
-				if success and play == 'fieldGoal':
-					utils.addStat(game, 'fieldGoalsAttempted', 1)
+							sub3Pt(game, True, fouled, points)
+						log.debug("Result is a gain of {} points".format(points))
+				elif playResultName in globals.foulMissPlays:
+					##get numbers to see how many free thors we will shoot
+					pointsTriedFor = re.search('2|3', result['result'])
+					setFouls(game, int(pointsTriedFor))
+					resultMessage = 'Going to shoot {} free throws.'.format(num)
+					foulsAfter()
+				elif playResultName in globals.nonShootingFoul:
+					resultMessage = setFouls(game, 0)
+				elif playResultName in globals.missPlays:
+					##No need to change who we are waitingon here
+					if pointsTriedFor == '2':
+						sub2Pt(game, False, False, 0)
+					else:
+						sub3Pt(game, False, False, 0)
+					resultMessage = "Missed a {} point shot.".format(pointsTriedFor)
+				elif playResultsName in globals.offRebound:
+					game[startingPossessionHomeAway]['offRebound'] += 1
+					game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
+
+					resultMessage = "Missed a shot but got the offensive rebound"
+
 				database.clearDefensiveNumber(game['dataID'])
 		else:
 			resultMessage = "{} isn't a valid play at the moment".format(play)
@@ -291,10 +305,92 @@ def executePlay(game, play, number, numberMessage):
 	messages = [resultMessage]
 	if actualResult is not None:
 		if timeMessage is None:
-			timeMessage = updateTime(game, play, actualResult, yards, startingPossessionHomeAway)
+			timeMessage = updateTime(game, play)
 		messages.append(timeMessage)
 	if diffMessage is None:
 		messages.append(diffMessage)
 	log.debug("Finishing execution of play")
 	log.debug("messages: resultMessage: {}, timeMessage:{}, diffMessage:{}".format(resultMessage, timeMessage, diffMessage))
 	return success, '\n\n'.join(messages)
+
+def sub3Pt(game, made, fouled, off=False):
+	'''
+	This function is used for all three point type plays. If a 3 point is missed then it
+	only adds to the stat of attepmts. If it is made then it adds the score and then
+	adds 3 point made and 3 total points to score. if fouled, then f_type is sent
+	'''
+	team = game['status']['posession']
+	utils.addStat(game,'3PtAttempted',1,team)
+	if made:
+		score3Points(game, team)
+		utils.addStat(game,'3PtMade',1, team)
+	if not made and not fouled:
+		utils.addStat(game,'defRebound', 1, utils.reverseHomeAway(team))
+	if off:
+		utils.addStat(game, 'offRebound',1, team)
+	if fouled:
+		setFouls(game, 3)
+		pass
+
+def sub2Pt(game, made, fouled):
+	'''
+	This function is used for all three point type plays. If a 2 point is missed then it
+	only adds to the stat of attepmts. If it is made then it adds the score and then
+	adds 2 point made and 2 total points to score.
+	'''
+	team = game['status']['posession']
+	utils.addStat(game,'2PtAttempted',1,team)
+	##if the shot was made
+	if made:
+		scoreTwoPoints(game, team)
+		utils.addStat(game,'2PtMade',1,team)
+	if not made and not fouled:
+		utils.addState(game,'defRebound', 1, utils.reverseHomeAway(team))
+	if fouled:
+		setFouls(game, 2)
+
+def setFouls(game,f_type):
+	'''
+	Pass in f_type which is used to determine if we are doing an after shot or a nonshooting
+	foul. If f_type is zero then we will check if we are in the bonus to determine next
+	action. Else we will shoot that many f_type number of free throws
+	'''
+	team = game['status']['possession']
+	otherTeam = utils.reverseHomeAway(team)
+	game[otherTeam]['fouls'] += 1
+	if f_type == 0:
+		return setBonus(game, team, otherTeam)
+	else:
+		game['status']['frees'] = f_type
+		game['status']['free'] = True
+		game[otherTeam]['fouls'] += 1
+
+
+def setBonusFouls(game, team, otherTeam):
+	otherFouls =  int(game[otherTeam]['fouls'])
+	if  globals.singleBonus <= otherFouls <= globals.doubleBonus:
+		game[team]['bonus'] = 'SB'
+		game['status']['free'] = True
+		game['status']['frees'] =  1
+		return 'In the bonus, shooting the one and one.'
+		#chagne waiting action and stuff
+		foulsAfter(game)
+	elif globals.doubleBonus <= otherFouls:
+		game[team]['bonus'] = 'DB'
+		game['status']['free'] = True
+		game['status']['frees'] =  2
+		foulsAfter(game)
+		return 'In the double bonus, shooting two.'
+	else:
+		game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
+		return 'Fouled but not in the bonus. Offense maintains possession'
+
+
+
+def changePossession(game):
+	current = game['status']['possession']
+	game['status']['possession'] = utils.reverseHomeAway(current)
+
+def foulsAfter(game):
+	game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
+	game['waitingAction'] = 'free'

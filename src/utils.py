@@ -561,7 +561,7 @@ def updateGameTimes(game):
 def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home', 'down': 1, 'yards': 10,
 		  'timeouts': {'home': 4, 'away': 4}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'free': False, 'frees': 0,
-		  'halfType': 'normal', 'overtimePossession': None, 'tipped':True, 'scored':False}
+		  'halfType': 'normal', 'overtimePossession': None, 'tipped':True, 'scored':False, 'fouls':{'home':0,'away':0}}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
 	game = {'home': home, 'away': away, 'poss': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
 		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",

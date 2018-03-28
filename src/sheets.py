@@ -135,7 +135,10 @@ def return_playdict():
                  'freeThrows':{'home':'','away':'','neutral':''}}
  
     for key in play_dict:
-        play_dict[key] = dc(sub_dict)
+        if key == 'freeThrows':
+            pass
+        else:
+            play_dict[key] = dc(sub_dict)
     return play_dict
 
 

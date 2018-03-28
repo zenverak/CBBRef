@@ -205,6 +205,7 @@ def getPlay(play):
 
 def getTimeByPlay(play):
 	if play in times:
+		log.debug('play {} was in times'.format(play))
 		return times[play]
 	else:
 		return None

@@ -12,11 +12,17 @@ SUBREDDIT_LINK = "https://www.reddit.com/r/{}/comments/".format(SUBREDDIT)
 ACCOUNT_NAME = "default"
 
 ### Constants ###
-movementPlays = ['push', 'average','chew']
-scorePlays = ['Made 2pt', 'Made 3pt']
-foulScore = ['Made 3pt and Foul', 'Made 2pt and Foul']
+offPlays = ['push', 'average','chew']
+pointResults = ['Made 2pt', 'Made 3pt', 'Made 3pt and Foul', 'Made 2pt and Foul']
+foulPlays = ['Made 3pt and Foul', 'Made 2pt and Foul','Fouled on 2 Pt', 'Fouled on 3Pt']
+foulMissPlays = ['Fouled on 2 Pt', 'Fouled on 3Pt']
+missPlays = ['Missed 2pt', 'Missed 3pt']
 conversionPlays = ['freeThrow',]
+nonShootingFoul = ['Foul', 'foul']
+offRebounds = ['Offensive rebound']
 datatag = " [](#datatag"
+singleBonus = 7
+doubleBonus = 10
 halfLength = 10*60
 maxRange = 1000
 
