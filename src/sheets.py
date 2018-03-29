@@ -113,20 +113,20 @@ def combine(plays):
         p = play[0]
 
 def return_playdict():
-    sub_dict = {'Attack the Rim':{
-                        'Man':{},
-                        'Zone':{},
-                        'Press':{}
+    sub_dict = {'attack the rim':{
+                        'man':{},
+                        'zone':{},
+                        'press':{}
                         },
-                'Midrange':{
-                        'Man':{},
-                        'Zone':{},
-                        'Press':{}
+                'midrange':{
+                        'man':{},
+                        'zone':{},
+                        'press':{}
                         },
-                '3 Point':{
-                        'Man':{},
-                        'Zone':{},
-                        'Press':{}
+                '3 point':{
+                        'man':{},
+                        'zone':{},
+                        'press':{}
                         }
                 }
     play_dict = {'push':{},
@@ -169,8 +169,8 @@ def combine_headers_with_list(range_list, headers):
 def add_to_dict(play_dict, type_, play_type, headers):
     for plays in play_type:
         play = plays[0]
-        off_style = play[0]
-        def_style = play[1]
+        off_style = play[0].lower()
+        def_style = play[1].lower()
         new_play = get_range_list(play)
         play_dict[type_][off_style][def_style] = combine_headers_with_list(new_play, headers)
     return play_dict

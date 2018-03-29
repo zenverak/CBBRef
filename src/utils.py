@@ -40,12 +40,9 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		team['posTime'] = 0
 		team['record'] = None
 		team['playclockPenalties'] = 0
-		team['timeouts'] = 4
-		team['1stScore'] = 0
-		team['2ndScore'] = 0
-		team['overTimeScore'] = 0
+		team['timeouts'] = globals.timeouts
 		team['bonus'] = 'N'
-		team['OffRebound'] = 0
+		team['offRebound'] = 0
 		team['defRebound'] = 0
 		team['fouls'] = 0
 		team['steals'] = 0
@@ -157,11 +154,11 @@ def get_percent(game, team, stat):
 	if stat == '3':
 		if game[team]['3PtAttempted'] == 0:
 			return 0
-		return game[team]['3PtMade']/(1.0 *game[team]['3PtAttmpted'])
+		return game[team]['3PtMade']/(1.0 *game[team]['3PtAttempted'])
 	elif stat == 'free':
 		if game[team]['FTAttempted'] == 0:
 			return 0
-		return game[team]['FTMade']/(1.0 *game[team]['FTAttmpted'])
+		return game[team]['FTMade']/(1.0 *game[team]['FTAttempted'])
 	else:
 		if game[team]['3PtAttempted'] == 0 and game[team]['2PtAttempted']==0:
 			return 0
@@ -230,8 +227,14 @@ def renderGame(game):
 		))
 	bldr.append("\n___\n\n")
 	if game['isOverTime']:
-		bldr.append("Team|H1|H2|OT|Total\n")
-		bldr.append(":-:|:-:|:-:|:-:|:-:\n")
+		bldr.append("Team|H1|H2|")
+		for i in range(1,game['half']+1-2):
+			bldr.append("OT{}|".format(i))
+		bldr.append('Total\n')
+		bldr.append(":-:|:-:|:-:|")
+		for i in range(1,game['half']+1-2):
+			bldr.append(":-:|".format(i))
+		bldr.append(':-:\n')
 	else:
 		bldr.append("Team|H1|H2|Total\n")
 		bldr.append(":-:|:-:|:-:|:-:\n")
@@ -243,10 +246,10 @@ def renderGame(game):
 		bldr.append(str(game['score']['halves'][1][team]))
 		bldr.append('|')
 		if game['isOverTime']:
-			bldr.append(str(game[team]['overTimeScore']))
-			bldr.append('|')
-			bldr.append(game[team]['1stScore'] + game[team]['2ndScore'] +
-											game[team]['overTimeScore'])
+			for i in range(3, int(game['half'])+1):
+				bldr.append(str(game['score']['halves'][i][team]))
+				bldr.append('|')
+			bldr.append(str(game['score'][team]))
 		else:
 			bldr.append(str(game['score'][team]))
 		bldr.append('\n')
@@ -423,13 +426,14 @@ def getNthWord(number):
 
 
 def getCurrentPlayString(game):
-	if not game['status']['tipped']:
-		game['status']['tipped'] = True
+	if  game['status']['tipped']:
+		game['status']['tipped'] = False
 		return "You just won the tip."
 	if game['status']['scored']:
-		return "{} just scored.".format(game[game['status']['possession']]['name'])
+		game['status']['scored'] = False
+		return "{} just scored {} points.".format(game[game['status']['possession']]['name'], game['status']['playResult'])
 	else:
-		return "Rebound. It is your ball"
+		return game['status']['playResult']
 
 
 
@@ -545,6 +549,7 @@ def addStatRunPass(game, runPass, amount):
 def addStat(game, stat, amount, offenseHomeAway=None):
 	if offenseHomeAway is None:
 		offenseHomeAway = game['status']['possession']
+	log.debug('we are adding {} amount to stat {} for the {} team'.format(amount, stat, offenseHomeAway))
 	game[offenseHomeAway][stat] += amount
 
 
@@ -559,12 +564,12 @@ def updateGameTimes(game):
 
 
 def newGameObject(home, away):
-	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home', 'down': 1, 'yards': 10,
-		  'timeouts': {'home': 4, 'away': 4}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'free': False, 'frees': 0,
-		  'halfType': 'normal', 'overtimePossession': None, 'tipped':True, 'scored':False, 'fouls':{'home':0,'away':0}}
+	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
+		  'timeouts': {'home': globals.timeouts, 'away': globals.timeouts}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'free': False, 'frees': 0, 'freeStatus': None,
+		  'halfType': 'normal', 'overtimePossession': None, 'tipped':True, 'scored':False,'wonTip':'','playResult':'' }
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
 	game = {'home': home, 'away': away, 'poss': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
-		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty", "receivingNext": "home",
+		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty",
 		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
-		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':False, 'awayTip':False}
+		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':False, 'awayTip':False }
 	return game

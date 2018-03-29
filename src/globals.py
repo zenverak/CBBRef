@@ -10,6 +10,7 @@ LOOP_TIME = 2*60
 DATABASE_NAME = "database.db"
 SUBREDDIT_LINK = "https://www.reddit.com/r/{}/comments/".format(SUBREDDIT)
 ACCOUNT_NAME = "default"
+timeouts = 4
 
 ### Constants ###
 offPlays = ['push', 'average','chew']
@@ -20,6 +21,8 @@ missPlays = ['Missed 2pt', 'Missed 3pt']
 conversionPlays = ['freeThrow',]
 nonShootingFoul = ['Foul', 'foul']
 offRebounds = ['Offensive rebound']
+turnovers = ['Steal', 'Turnover']
+
 datatag = " [](#datatag"
 singleBonus = 7
 doubleBonus = 10

@@ -286,6 +286,18 @@ def clearGameErrored(gameID):
 	return True
 
 
+def clearGameErroredOnly(gameID):
+	execString = "update games set errored = 0 where ID = {}".format(gameID)
+
+	try:
+		c = dbConn.cursor()
+		c.execute(execString)
+		dbConn.commit()
+	except Exception as err:
+		return False
+	return True
+
+
 def setGameErrored(gameID):
 	c = dbConn.cursor()
 	c.execute('''

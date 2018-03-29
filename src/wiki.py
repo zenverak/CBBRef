@@ -21,6 +21,8 @@ lastTime = None
 
 def loadPages():
 	global lastTime
+	global plays
+	global times
 	if lastTime is None or lastTime + timedelta(minutes=15) < datetime.utcnow():
 		startTime = time.perf_counter()
 		log.debug("Loading pages")

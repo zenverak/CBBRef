@@ -101,6 +101,7 @@ def processMessageTip(game, message):
 		homeTip = int(database.getTipById(game['dataID'],'homeTip'))
 		botTip = utils.rngNumber()
 		tipWinner = utils.getTipWinner(awayTip, homeTip, botTip)
+		game['status']['wonTip'] = tipWinner
 		game['waitingOn'] =  utils.reverseHomeAway(tipWinner)
 		log.debug("sending initial defensive play comment to {}".format(game['waitingOn']))
 		resultMessage =  "/u/{} has won the tippoff . /u/{} Will get a DM to start the action. \n \
@@ -212,7 +213,6 @@ def processMessageOffensePlay(game, message, author):
 	if timeoutMessageDefense is not None:
 		result.append(timeoutMessageDefense)
 
-	game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
 	game['dirty'] = True
 	if game['waitingAction'] == 'play':
 		utils.sendDefensiveNumberMessage(game)
