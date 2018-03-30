@@ -303,6 +303,7 @@ def executePlay(game, play, number, numberMessage):
 					setTurnovers(game, playResultName.lower())
 				elif playResultName == 'Block':
 					setBlock(game, 'block')
+				setWaitingOn(game)
 
 				database.clearDefensiveNumber(game['dataID'])
 		else:
@@ -395,7 +396,6 @@ def setBonusFouls(game, team, otherTeam):
 		foulsAfter(game)
 		return 'In the double bonus, shooting two.'
 	else:
-		game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
 		return 'Fouled but not in the bonus. Offense maintains possession'
 
 
@@ -414,13 +414,11 @@ def setTurnovers(game,turnover):
 
 	game[startingPossessionHomeAway]['turnovers'] += 1
 	game[utils.reverseHomeAway(startingPossessionHomeAway)][turnover] += 1
-	game[waitingOn] = startingPossessionHomeAway
 	game['status']['possession'] = utils.reverseHomeAway(startingPossessionHomeAway)
 
 
 def setBlock(game,turnover):
 	game[utils.reverseHomeAway(startingPossessionHomeAway)][turnover] += 1
-	game[waitingOn] = startingPossessionHomeAway
 	game['status']['possession'] = utils.reverseHomeAway(startingPossessionHomeAway)
 	shotType = utils.coinToss()
 	if shotType:
@@ -441,3 +439,28 @@ def getFreeThrowResult(game,number):
 		return True
 	else:
 		return False
+
+def switchDefOff(game):
+	if game['play']['defensiveNumber']:
+		game['play']['defensiveNumber'] = False
+		game['play']['offensiveNumber'] =  True
+	else:
+		game['play']['defensiveNumber'] = True
+		game['play']['offensiveNumber'] =  False
+
+def setWaitingOn(game):
+	log.debug('going to set waitingOn. It is currently set to {}'.format(game['waitingOn']))
+	##use this to set waitingOn. MOvfe all waiting on logic to homeRecord
+	current = game['status']['possession']
+	other = utils.reverseHomeAway(current)
+	if game['play']['fouled']:
+		game['waitingOn'] = other
+		switchDefOff(game)
+	elif game['status']['free']:
+		game['waitingOn'] = other
+	elif game['play']['defensiveNumber']:
+		switchDefOff(game)
+		game['waitingOn'] = current
+	elif game['play']['offensiveNumber']:
+		switchDefOff(game)
+	log.debug('we are currently awiting on {}'.format(game['waitingOn']))

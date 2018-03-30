@@ -103,6 +103,9 @@ def processMessageTip(game, message):
 		tipWinner = utils.getTipWinner(awayTip, homeTip, botTip)
 		game['status']['wonTip'] = tipWinner
 		game['waitingOn'] =  utils.reverseHomeAway(tipWinner)
+		game['status']['possession'] = tipWinner
+		game['play']['defensiveNumber'] = True
+		game['play']['offensiveNumber'] = False
 		log.debug("sending initial defensive play comment to {}".format(game['waitingOn']))
 		resultMessage =  "/u/{} has won the tippoff . /u/{} Will get a DM to start the action. \n \
 						away tip number: {}\nhome tip number: {}\n bot tip number: {}".format(
@@ -141,8 +144,8 @@ def processMessageDefenseNumber(game, message, author):
 			timeoutMessage = "Timeout requested successfully"
 		else:
 			timeoutMessage = "You requested a timeout, but you don't have any left"
-
-	game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
+	state.switchDefOff(game)
+	state.setWaitingOn(game)
 	game['dirty'] = True
 
 	log.debug("Sending offense play comment")

@@ -568,8 +568,10 @@ def newGameObject(home, away):
 		  'timeouts': {'home': globals.timeouts, 'away': globals.timeouts}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'free': False, 'frees': 0, 'freeStatus': None,
 		  'halfType': 'normal', 'overtimePossession': None, 'tipped':True, 'scored':False,'wonTip':'','playResult':'' }
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
+	play = {'fouled':False,'defensiveNumber':True, 'offensiveNumber':False}
 	game = {'home': home, 'away': away, 'poss': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
 		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty",
 		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
-		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':False, 'awayTip':False }
+		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':False, 'awayTip':False, 'play':play }
+
 	return game
