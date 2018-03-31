@@ -257,11 +257,10 @@ def executePlay(game, play, number, numberMessage):
 							fouled =  True
 						else:
 							game['status']['possession'] = utils.reverseHomeAway(game['status']['possession'])
-
 						points = result['points']
+						resultMessage = 'Basket good for {} points.'.format(points)
 						if fouled:
 							resultMessage = resultMessage + ' AND ONE. Player is fouled.'
-						resultMessage = 'Basket good for {} points.'.format(points)
 						if points ==  2:
 							sub2Pt(game, True, fouled)
 							game['status']['playResult'] = '2'
@@ -303,7 +302,7 @@ def executePlay(game, play, number, numberMessage):
 					setTurnovers(game, playResultName.lower())
 				elif playResultName == 'Block':
 					setBlock(game, 'block')
-				setWaitingOn(game)
+
 
 				database.clearDefensiveNumber(game['dataID'])
 		else:
@@ -333,12 +332,16 @@ def sub3Pt(game, made, fouled, off=False):
 	if made:
 		score3Points(game, team)
 		utils.addStat(game,'3PtMade',1, team)
-	if not made and not fouled:
+		if fouled:
+			setFouls(game, 1)
+	elif not made and not fouled and not off:
 		utils.addStat(game,'defRebound', 1, utils.reverseHomeAway(team))
-	if off:
+	elif off:
 		utils.addStat(game, 'offRebound',1, team)
-	if fouled:
+	elif fouled:
 		setFouls(game, 3)
+	else:
+		log.warning("should not be here in the sub3Pt function")
 
 
 
@@ -354,13 +357,16 @@ def sub2Pt(game, made, fouled, off=False):
 	if made:
 		scoreTwoPoints(game, team)
 		utils.addStat(game,'2PtMade',1,team)
-	if not made and not fouled:
+		if fouled:
+			setFouls(game, 1)
+	elif not made and not fouled and not off:
 		utils.addState(game,'defRebound', 1, utils.reverseHomeAway(team))
-	if off:
+	elif off:
 		utils.addStat(game, 'offRebound',1,team)
-	if fouled:
+	elif fouled and not made:
 		setFouls(game, 2)
-		foulsAfter(game)
+	else:
+		log.warning("OOPS. should not be here in sub2Pt")
 
 
 def setFouls(game,f_type):
@@ -371,7 +377,6 @@ def setFouls(game,f_type):
 	'''
 	team = game['status']['possession']
 	otherTeam = utils.reverseHomeAway(team)
-	game[otherTeam]['fouls'] += 1
 	if f_type == 0:
 		return setBonus(game, team, otherTeam)
 	else:
@@ -388,12 +393,10 @@ def setBonusFouls(game, team, otherTeam):
 		game['status']['frees'] =  1
 		return 'In the bonus, shooting the one and one.'
 		#chagne waiting action and stuff
-		foulsAfter(game)
 	elif globals.doubleBonus <= otherFouls:
 		game[team]['bonus'] = 'DB'
 		game['status']['free'] = True
 		game['status']['frees'] =  2
-		foulsAfter(game)
 		return 'In the double bonus, shooting two.'
 	else:
 		return 'Fouled but not in the bonus. Offense maintains possession'
@@ -403,11 +406,6 @@ def setBonusFouls(game, team, otherTeam):
 def changePossession(game):
 	current = game['status']['possession']
 	game['status']['possession'] = utils.reverseHomeAway(current)
-
-
-def foulsAfter(game):
-	game['waitingOn'] = utils.reverseHomeAway(game['waitingOn'])
-#	game['waitingAction'] = 'free'
 
 
 def setTurnovers(game,turnover):
@@ -441,23 +439,32 @@ def getFreeThrowResult(game,number):
 		return False
 
 def switchDefOff(game):
+
 	if game['play']['defensiveNumber']:
 		game['play']['defensiveNumber'] = False
 		game['play']['offensiveNumber'] =  True
 	else:
 		game['play']['defensiveNumber'] = True
 		game['play']['offensiveNumber'] =  False
+	return game
 
 def setWaitingOn(game):
 	log.debug('going to set waitingOn. It is currently set to {}'.format(game['waitingOn']))
 	##use this to set waitingOn. MOvfe all waiting on logic to homeRecord
 	current = game['status']['possession']
 	other = utils.reverseHomeAway(current)
-	if game['play']['fouled']:
+	log.debug("logging various useful information")
+	log.debug("current is {}".format(current))
+	log.debug("other is {}".format(other))
+	log.debug("just fouled is {}".format(game['play']['fouled']))
+	log.debug("shooting three throws is ")
+
+	if game['status']['free'] and game['play']['offensiveNumber']:
 		game['waitingOn'] = other
 		switchDefOff(game)
-	elif game['status']['free']:
-		game['waitingOn'] = other
+	elif game['status']['free'] and game['play']['defensiveNumber']:
+		game['waitingOn'] = current
+		switchDefOff(game)
 	elif game['play']['defensiveNumber']:
 		switchDefOff(game)
 		game['waitingOn'] = current

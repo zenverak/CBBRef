@@ -43,5 +43,5 @@ def saveDefensiveNumber(gameID, number):
 
 
 
-#print (True == clearGameErroredOnly(1))
-saveDefensiveNumber(1,33)
+print (True == clearGameErroredOnly(1))
+#saveDefensiveNumber(1,33)

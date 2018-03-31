@@ -144,8 +144,12 @@ def processMessageDefenseNumber(game, message, author):
 			timeoutMessage = "Timeout requested successfully"
 		else:
 			timeoutMessage = "You requested a timeout, but you don't have any left"
-	state.switchDefOff(game)
+	log.debug("offense is currently {}".format(game['play']['offensiveNumber']))
+
+	log.debug("we were waiting on {}".format(game['waitingOn']))
 	state.setWaitingOn(game)
+	log.debug("we are now waiting on {}".format(game['waitingOn']))
+	log.debug("offene is is {}".format(game['play']['offensiveNumber']))
 	game['dirty'] = True
 
 	log.debug("Sending offense play comment")
@@ -188,6 +192,8 @@ def processMessageOffensePlay(game, message, author):
 		play = "average"
 	elif playSelected == "push":
 		play = "push"
+	elif game['status']['free']:
+		play = 'free'
 
 	elif playSelected == "mult":
 		log.debug("Found multiple plays")
@@ -216,8 +222,11 @@ def processMessageOffensePlay(game, message, author):
 	if timeoutMessageDefense is not None:
 		result.append(timeoutMessageDefense)
 
-	game['dirty'] = True
-	if game['waitingAction'] == 'play':
+
+	if playSelected != 'default':
+		state.setWaitingOn(game)
+		game['dirty'] = True
+	if game['waitingAction'] == 'play' and playSelect != 'default':
 		utils.sendDefensiveNumberMessage(game)
 	elif game['waitingAction'] == 'overtime':
 		log.debug("Starting overtime, posting coin toss comment")
@@ -351,6 +360,7 @@ def processMessage(message):
 
 				elif dataTable['action'] == 'play' and not isMessage:
 					success, response = processMessageOffensePlay(game, body, str(message.author))
+
 		else:
 			log.debug("Couldn't get a game for /u/{}".format(author))
 	else:
