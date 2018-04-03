@@ -332,16 +332,14 @@ def sendGameMessage(isHome, game, message, dataTable):
 def sendGameComment(game, message, dataTable=None):
 
 	commentResult = reddit.replySubmission(game['thread'], embedTableInMessage(message, dataTable))
-	tipped = False
-	try:
-		tipped =  game['status']['tipped']
-	except:
-		tipped = False
-	if not tipped:
-		log.debug("sent result of tip to game thread")
-	else:
-		game['waitingId'] = commentResult.fullname
-		log.debug("Game comment sent, now waiting on: {}".format(game['waitingId']))
+	game['waitingId'] = commentResult.fullname
+	log.debug("Game comment sent, now waiting on: {}".format(game['waitingId']))
+	return commentResult
+
+def sendGameCommentAfterTip(game, message, dataTable=None):
+
+	commentResult = reddit.replySubmission(game['thread'], embedTableInMessage(message, dataTable))
+	log.debug("Tip Game comment sent, now waiting on: {}".format(game['waitingId']))
 	return commentResult
 
 

@@ -107,10 +107,10 @@ def processMessageTip(game, message):
 		game['play']['defensiveNumber'] = True
 		game['play']['offensiveNumber'] = False
 		log.debug("sending initial defensive play comment to {}".format(game['waitingOn']))
-		resultMessage =  "/u/{} has won the tippoff . /u/{} Will get a DM to start the action. \n \
-						away tip number: {}\
+		resultMessage =  "/u/{} has won the tippoff . /u/{} Will get a DM to start the action. \
+						\naway tip number: {}\
 						\nhome tip number: {}\
-						\n bot tip number: {}".format(
+						\nbot tip number: {}".format(
 						game[tipWinner]['coaches'][0],
 						game[game['waitingOn']]['coaches'][0],
 						awayTip,
@@ -393,7 +393,7 @@ def processMessage(message):
 				log.debug('sending the winning tip message to the game thread')
 				##send the tip update to the game thread instead of to the last
 				## person who sent a tip number
-				resultMessage = utils.sendGameComment(game, response)
+				resultMessage = utils.sendGameCommentAfterTip(game, response)
 				game['tip']['justTipped'] =  False
 				game['tip']['tipped'] = True
 			else:

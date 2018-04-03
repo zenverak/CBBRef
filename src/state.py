@@ -373,7 +373,7 @@ def sub2Pt(game, made, fouled, off=False):
 	utils.addStat(game,'2PtAttempted',1,team)
 	##if the shot was made
 	if made:
-		scoreTwoPoints(game, team)
+		score2Points(game, team)
 		utils.addStat(game,'2PtMade',1,team)
 		if fouled:
 			setFouls(game, 1)
