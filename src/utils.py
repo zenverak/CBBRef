@@ -46,6 +46,7 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		team['defRebound'] = 0
 		team['fouls'] = 0
 		team['steals'] = 0
+		team['blocks'] = 0
 
 	game = newGameObject(homeTeam, awayTeam)
 	if startTime is not None:
@@ -100,7 +101,7 @@ def embedTableInMessage(message, table):
 		return message
 	else:
 		return "{}{}{})".format(message,
-		 					globals.datatag,
+							globals.datatag,
 							json.dumps(table, indent=4, sort_keys=True, default=str))
 
 
@@ -331,8 +332,16 @@ def sendGameMessage(isHome, game, message, dataTable):
 def sendGameComment(game, message, dataTable=None):
 
 	commentResult = reddit.replySubmission(game['thread'], embedTableInMessage(message, dataTable))
-	game['waitingId'] = commentResult.fullname
-	log.debug("Game comment sent, now waiting on: {}".format(game['waitingId']))
+	tipped = False
+	try:
+		tipped =  game['status']['tipped']
+	except:
+		tipped = False
+	if not tipped:
+		log.debug("sent result of tip to game thread")
+	else:
+		game['waitingId'] = commentResult.fullname
+		log.debug("Game comment sent, now waiting on: {}".format(game['waitingId']))
 	return commentResult
 
 
@@ -340,7 +349,7 @@ def sendTipNumberMessages(game, coaches):
 	reddit.sendMessage(coaches,
 			   'Tip Number',
 			   embedTableInMessage("\n\nReply with a number between \
-			   			**1** and **{0}**, inclusive.".format(globals.maxRange)
+						**1** and **{0}**, inclusive.".format(globals.maxRange)
 					       , {'action': 'tip'}))
 	messageResult = reddit.getRecentSentMessage()
 	game['waitingId'] = messageResult.fullname
@@ -426,14 +435,13 @@ def getNthWord(number):
 
 
 def getCurrentPlayString(game):
-	if  game['status']['tipped']:
-		game['status']['tipped'] = False
+	if  game['status']['tipped'] == False:
 		return "You just won the tip."
 	if game['status']['scored']:
 		game['status']['scored'] = False
-		return "{} just scored {} points.".format(game[game['status']['possession']]['name'], game['status']['playResult'])
+		return "{} just scored".format(game[game['status']['possession']]['name'])
 	else:
-		return game['status']['playResult']
+		return game['play']['playResult']
 
 
 
@@ -566,12 +574,14 @@ def updateGameTimes(game):
 def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
 		  'timeouts': {'home': globals.timeouts, 'away': globals.timeouts}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'free': False, 'frees': 0, 'freeStatus': None,
-		  'halfType': 'normal', 'overtimePossession': None, 'tipped':True, 'scored':False,'wonTip':'','playResult':'' }
+		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'','tipped':False}
+	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
-	play = {'fouled':False,'defensiveNumber':True, 'offensiveNumber':False}
+	play = {'fouled':False,'defensiveNumber':True, 'offensiveNumber':False, 'playResult':'', 'playDesc':''}
 	game = {'home': home, 'away': away, 'poss': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
 		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty",
 		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
-		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False, 'homeTip':False, 'awayTip':False, 'play':play }
+		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False,  'play':play, 'tip':tip }
+
 
 	return game

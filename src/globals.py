@@ -12,6 +12,7 @@ SUBREDDIT_LINK = "https://www.reddit.com/r/{}/comments/".format(SUBREDDIT)
 ACCOUNT_NAME = "default"
 timeouts = 4
 
+
 ### Constants ###
 offPlays = ['push', 'average','chew']
 pointResults = ['Made 2pt', 'Made 3pt', 'Made 3pt and Foul', 'Made 2pt and Foul']
@@ -22,6 +23,7 @@ conversionPlays = ['freeThrow',]
 nonShootingFoul = ['Foul', 'foul']
 offRebounds = ['Offensive rebound']
 turnovers = ['Steal', 'Turnover']
+switchPossessions = ['turnover', 'made','freeDone','block','missed']
 
 datatag = " [](#datatag"
 singleBonus = 7

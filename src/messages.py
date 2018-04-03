@@ -96,7 +96,7 @@ def processMessageTip(game, message):
 		return False,  'ooops'
 	log.debug('Now checking if game is dirty and tip off is complete')
 	log.debug('Dirty is {}'.format(game['dirty']))
-	if game['awayTip'] and game['homeTip']:
+	if game['tip']['awayTip'] and game['tip']['homeTip']:
 		awayTip = int(database.getTipById(game['dataID'],'awayTip'))
 		homeTip = int(database.getTipById(game['dataID'],'homeTip'))
 		botTip = utils.rngNumber()
@@ -108,7 +108,9 @@ def processMessageTip(game, message):
 		game['play']['offensiveNumber'] = False
 		log.debug("sending initial defensive play comment to {}".format(game['waitingOn']))
 		resultMessage =  "/u/{} has won the tippoff . /u/{} Will get a DM to start the action. \n \
-						away tip number: {}\nhome tip number: {}\n bot tip number: {}".format(
+						away tip number: {}\
+						\nhome tip number: {}\
+						\n bot tip number: {}".format(
 						game[tipWinner]['coaches'][0],
 						game[game['waitingOn']]['coaches'][0],
 						awayTip,
@@ -116,12 +118,13 @@ def processMessageTip(game, message):
 						botTip
 						)
 
-		defMessage = "/u/{} has won the tippoff . Please send me a number to start the game getween **1** and **{}**".format(game[tipWinner]['coaches'][0],globals.maxRange)
+		defMessage = "You lost the tipoff . Please send me a number to start the game getween **1** and **{}**".format(globals.maxRange)
 		log.debug('defensive message is {}'.format(defMessage))
 		game['dirty'] =  True
 
 		utils.sendDefensiveNumberMessage(game, defMessage)
 		game['waitingAction'] = 'play'
+		game['tip']['justTipped'] = True
 
 		return True, resultMessage
 	return worked, resultMessage
@@ -226,7 +229,7 @@ def processMessageOffensePlay(game, message, author):
 	if playSelected != 'default':
 		state.setWaitingOn(game)
 		game['dirty'] = True
-	if game['waitingAction'] == 'play' and playSelect != 'default':
+	if game['waitingAction'] == 'play' and playSelected != 'default':
 		utils.sendDefensiveNumberMessage(game)
 	elif game['waitingAction'] == 'overtime':
 		log.debug("Starting overtime, posting coin toss comment")
@@ -304,6 +307,7 @@ def processMessage(message):
 	updateWaiting = True
 	dataTable = None
 	resultMessage = None
+	tipped = False
 
 	if message.parent_id is not None and (message.parent_id.startswith("t1") or message.parent_id.startswith("t4")):
 		if isMessage:
@@ -373,7 +377,6 @@ def processMessage(message):
 			response = processMessagePauseGame(message.body)
 		if "abandon" in body and isMessage and str(message.author).lower() in wiki.admins:
 			response = processMessageAbandonGame(message.body)
-
 	message.mark_read()
 	if response is not None:
 		if success is not None and not success and dataTable is not None and utils.extractTableFromMessage(response) is None:
@@ -382,12 +385,27 @@ def processMessage(message):
 			if updateWaiting and game is not None:
 				game['waitingId'] = 'return'
 		log.debug("About to send reply Message")
-		resultMessage = reddit.replyMessage(message, response)
+
+
+		if game is not None:
+			log.debug("game is not none")
+			if game['tip']['justTipped']:
+				log.debug('sending the winning tip message to the game thread')
+				##send the tip update to the game thread instead of to the last
+				## person who sent a tip number
+				resultMessage = utils.sendGameComment(game, response)
+				game['tip']['justTipped'] =  False
+				game['tip']['tipped'] = True
+			else:
+				resultMessage = reddit.replyMessage(message, response)
+		else:
+			resultMessage = reddit.replyMessage(message, response)
 		log.debug("result of sending reply message was {}".format(resultMessage))
 		if resultMessage is None:
 			log.warning("Could not send message")
 		elif game is not None and game['waitingId'] == 'return':
 			game['waitingId'] = resultMessage.fullname
+			log.debug('About to send. WaitingID is {} when waitingID was return'.format(game['waitingId']))
 			game['dirty'] = True
 			log.debug("Message/comment replied, now waiting on: {}".format(game['waitingId']))
 	else:

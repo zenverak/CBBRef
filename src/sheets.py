@@ -198,14 +198,14 @@ def get_play_type_name(type_):
         return 'balls'
 
 def get_time_dict(times):
-    time_dict = {'Attack the Rim':{},
-                 'Midrange':{},
-                 '3 Point':{}
+    time_dict = {'attack the rim':{},
+                 'midrange':{},
+                 '3 point':{}
                  }
     for time in times:
         ##tfp = time for play
         tfp = time[0]
-        play_style = tfp[0]
+        play_style = tfp[0].lower()
         play_type = get_play_type_name(tfp[1])
         time_dict[play_style][play_type] = int(tfp[2].replace(':',''))
     return time_dict

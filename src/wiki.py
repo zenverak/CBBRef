@@ -205,11 +205,14 @@ def getPlay(play):
 		return None
 
 
-def getTimeByPlay(play):
-	if play in times:
-		log.debug('play {} was in times'.format(play))
-		return times[play]
+def getTimeByPlay(game):
+	offense =  game[game['status']['possession']]['offense']
+	log.debug("offense was {}".format(offense))
+	if offense in times:
+		log.debug('offense {} was in times'.format(offense))
+		return times[offense]
 	else:
+		log.debug("Offense {} is not in times".format(offense))
 		return None
 
 
