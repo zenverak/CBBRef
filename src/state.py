@@ -247,9 +247,12 @@ def executePlay(game, play, number, numberMessage):
 				log.debug("Executing normal play: {}".format(play))
 				result = getPlayResult(game, play, numberResult)
 				playResultName = result['result']
+				log.debug('playResultName is {}'.format(playResultName))
 				ptf = re.search('2|3', playResultName)
+				log.debug("ptf is {}".format(ptf))
 				if ptf:
 					pointsTriedFor = int(ptf.group(0))
+					log.debug("this shot as an attempt for {} points".format(pointsTriedFor))
 				if playResultName in globals.pointResults :
 					if 'points' not in result:
 						log.warning("Result is a score, but I couldn't find any points")
@@ -289,16 +292,21 @@ def executePlay(game, play, number, numberMessage):
 					game['play']['playResult'] = 'miss'##No need to change who we are waitingon here
 					if pointsTriedFor == '2':
 						sub2Pt(game, False, False, 0)
-					else:
+					elif pointsTriedFor == '3':
 						sub3Pt(game, False, False, 0)
+					else:
+						return False, "Could not detect a number like we think it should. We must pay with our game lives"
 					resultMessage = "Missed a {} point shot.".format(pointsTriedFor)
 				elif playResultName in globals.offRebounds:
 					game['play']['playResult'] = 'off rebound'
 					shotType = utils.coinToss()
 
+
 					if shotType:
+						log.debug('By random choice this was a 2 point shot')
 						sub2Pt(game, False, False, True)
 					else:
+						log.debug('By random chocie this was a 3 point shot')
 						sub3Pt(game, False, False, True)
 
 

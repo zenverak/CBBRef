@@ -433,7 +433,7 @@ def getNthWord(number):
 
 
 def getCurrentPlayString(game):
-	if  game['status']['tipped'] == False:
+	if  game['tip']['tipped'] == False:
 		return "You just won the tip."
 	if game['status']['scored']:
 		game['status']['scored'] = False
