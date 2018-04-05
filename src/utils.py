@@ -155,15 +155,15 @@ def get_percent(game, team, stat):
 	if stat == '3':
 		if game[team]['3PtAttempted'] == 0:
 			return 0
-		return game[team]['3PtMade']/(1.0 *game[team]['3PtAttempted'])
+		return 100 * (game[team]['3PtMade']/(1.0 *game[team]['3PtAttempted']))
 	elif stat == 'free':
 		if game[team]['FTAttempted'] == 0:
 			return 0
-		return game[team]['FTMade']/(1.0 *game[team]['FTAttempted'])
+		return 100 * game[team]['FTMade']/(1.0 *game[team]['FTAttempted'])
 	else:
 		if game[team]['3PtAttempted'] == 0 and game[team]['2PtAttempted']==0:
 			return 0
-		return (game[team]['3PtMade']+game[team]['2PtMade'])/(1.0 *(game[team]['3PtAttempted']+game[team]['2PtAttempted']))
+		return 100 * (game[team]['3PtMade']+game[team]['2PtMade'])/(1.0 *(game[team]['3PtAttempted']+game[team]['2PtAttempted']))
 
 
 
@@ -435,14 +435,34 @@ def getNthWord(number):
 def getCurrentPlayString(game):
 	if  game['tip']['tipped'] == False:
 		return "You just won the tip."
-	if game['status']['scored']:
+	if game['status']['scored'] and  not game['status']['free']:
 		game['status']['scored'] = False
-		return "{} just scored".format(game[game['status']['possession']]['name'])
+		return "You just scored"
+	elif game['status']['free']:
+		game['status']['scored'] = False
+		return getFreeThrowString(game)
 	else:
 		return game['play']['playResult']
 
+def getFreeThrowString(game):
+	max = game['status']['freeStatus']
+	numLeft = game['status']['frees']
+	if game['freeThrows']['freeType'] == '1and1':
+		if game['status']['free'] == True:
+			return "{} is shooting the backend of the 1 and 1".format(game['status']['possession'])
+		if game['status']['free'] == '1and1Start':
+			return "{} is shooting the frontend of the 1 and 1".format(game['status']['possession'])
+	else:
+		freeNum = getFreeNumber(numLeft, max)
+		return "{} is shooting free throw {} of {}".format(game['status']['possession'], freeNum, max)
 
-
+def getFreeNumber(num,max):
+	if (num == 3) or (num == 2 and max == 2):
+		return 1
+	elif num == 2 and max in (3,2):
+		return 2
+	else:
+		return num
 def getWaitingOnString(game):
 	string = "Error, no action"
 	if game['waitingAction'] == 'tip':
@@ -571,15 +591,18 @@ def updateGameTimes(game):
 
 def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
-		  'timeouts': {'home': globals.timeouts, 'away': globals.timeouts}, 'requestedTimeout': {'home': 'none', 'away': 'none'}, 'free': False, 'frees': 0, 'freeStatus': None,
+		  'timeouts': {'home': globals.timeouts, 'away': globals.timeouts},
+		  'requestedTimeout': {'home': 'none', 'away': 'none'},
+		  'free': False, 'frees': 0, 'freeStatus': None,
 		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'','tipped':False}
+	freeThrows = {'freeType':None}
 	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
 	play = {'fouled':False,'defensiveNumber':True, 'offensiveNumber':False, 'playResult':'', 'playDesc':''}
 	game = {'home': home, 'away': away, 'poss': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
 		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty",
 		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),
-		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False,  'play':play, 'tip':tip }
+		'deadline': datetime.utcnow() + timedelta(days=10),'isOverTime':False,  'play':play, 'tip':tip , 'freeThrows':freeThrows}
 
 
 	return game

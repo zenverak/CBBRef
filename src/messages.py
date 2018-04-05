@@ -156,15 +156,26 @@ def processMessageDefenseNumber(game, message, author):
 	game['dirty'] = True
 
 	log.debug("Sending offense play comment")
-	resultMessage = "{} has submitted their number. {} you're up\
-	.\n\n{}\n\n{} reply with {} and your number. [Play list]({})".format(
-		game[utils.reverseHomeAway(game['waitingOn'])]['name'],
-		game[game['waitingOn']]['name'],
-		utils.getCurrentPlayString(game),
-		utils.getCoachString(game, game['waitingOn']),
-		utils.listSuggestedPlays(game),
-		"https://www.reddit.com/r/FakeCollegeFootball/wiki/refbot"
-	)
+	if  not game['status']['free']:
+		resultMessage = "{} has submitted their number. {} you're up\
+		.\n\n{}\n\n{} reply with {} and your number. [Play list]({})".format(
+			game[utils.reverseHomeAway(game['waitingOn'])]['name'],
+			game[game['waitingOn']]['name'],
+			utils.getCurrentPlayString(game),
+			utils.getCoachString(game, game['waitingOn']),
+			utils.listSuggestedPlays(game),
+			"https://www.reddit.com/r/TestFakeCBB/wiki/refbot"
+			)
+	else:
+		resultMessage = "{} has submitted their number for your free throw. {} you're up\
+		.\n\n{}\n\n{} reply with your free throw number. [Play list]({})".format(
+			game[utils.reverseHomeAway(game['waitingOn'])]['name'],
+			game[game['waitingOn']]['name'],
+			utils.getCurrentPlayString(game),
+			utils.getCoachString(game, game['waitingOn']),
+			utils.listSuggestedPlays(game),
+			"https://www.reddit.com/r/TestFakeCBB/wiki/refbot"
+			)
 	utils.sendGameComment(game, resultMessage, {'action': 'play'})
 
 	result = ["I've got {} as your number.".format(number)]

@@ -37,7 +37,7 @@ def tipResults(game, homeaway,number):
 	log.debug('game is dirty is {}. this is after updating game thread'.format(game['dirty']))
 	return 'result time', True
 
-def setStateOvertimeDrive(game, homeAway):
+def setStateOvertime(game, homeAway):
 	if homeAway not in ['home', 'away']:
 		log.warning("Bad homeAway in setStateOvertimeDrive: {}".format(homeAway))
 		return
@@ -135,6 +135,8 @@ def getTimeByPlay(game,play):
 
 
 def updateTime(game, play, result, offenseHomeAway):
+	if result == 'FREE':
+		return ''
 
 	timeOffClock = getTimeByPlay(game, play)
 	log.debug("time off the clock was {}".format(timeOffClock))
@@ -154,7 +156,7 @@ def updateTime(game, play, result, offenseHomeAway):
 	game['status']['clock'] -= timeOffClock
 	timeMessage = "{} left".format(utils.renderTime(game['status']['clock']))
 
-	if game['status']['clock'] < 0:
+	if game['status']['clock'] <= 0:
 		log.debug("End of half: {}".format(game['status']['half']))
 		actualTimeOffClock = timeOffClock + game['status']['clock']
 		if game['status']['half'] == 1:
@@ -203,6 +205,7 @@ def executePlay(game, play, number, numberMessage):
 	fouled = False
 	log.debug("starting to execute Play with play being {} and number being {}".format(play, number))
 	if game['status']['free'] != False:
+		result = "FREE"
 		if number == -1:
 			log.debug("Trying to shoot a free throw play, but didn't have a number")
 			resultMessage = numberMessage
@@ -229,6 +232,7 @@ def executePlay(game, play, number, numberMessage):
 				game['status']['free'] = False
 				game['waitingAction'] =  'play'
 				game['play']['playResult'] = 'freeDone'
+				game['freeThrows']['freeType'] = None
 			else:
 				pass
 ##			database.clearDefensiveNumber(game['dataID'])
@@ -281,7 +285,7 @@ def executePlay(game, play, number, numberMessage):
 				elif playResultName in globals.foulMissPlays:
 					##get numbers to see how many free thors we will shoot
 					setFouls(game, pointsTriedFor)
-					resultMessage = 'Going to shoot {} free throws.'.format(num)
+					resultMessage = 'Going to shoot {} free throws.'.format(pointsTriedFor)
 					game['play']['playResult'] = 'fouled'
 					foulsAfter(game)
 				elif playResultName in globals.nonShootingFoul:
@@ -290,12 +294,12 @@ def executePlay(game, play, number, numberMessage):
 					game['play']['playResult'] = 'fouled'
 				elif playResultName in globals.missPlays:
 					game['play']['playResult'] = 'miss'##No need to change who we are waitingon here
-					if pointsTriedFor == '2':
-						sub2Pt(game, False, False, 0)
-					elif pointsTriedFor == '3':
-						sub3Pt(game, False, False, 0)
+					if pointsTriedFor == 2:
+						sub2Pt(game, False, False)
+					elif pointsTriedFor == 3:
+						sub3Pt(game, False, False)
 					else:
-						return False, "Could not detect a number like we think it should. We must pay with our game lives"
+						return False, "Could not detect a number like we think it should. We must pay with our "
 					resultMessage = "Missed a {} point shot.".format(pointsTriedFor)
 				elif playResultName in globals.offRebounds:
 					game['play']['playResult'] = 'off rebound'
@@ -359,12 +363,15 @@ def sub3Pt(game, made, fouled, off=False):
 		score3Points(game, team)
 		utils.addStat(game,'3PtMade',1, team)
 		if fouled:
+			log.debug('Going to set foul information for a 3 point shot made with an and one')
 			setFouls(game, 1)
 	elif not made and not fouled and not off:
+		log.debug('Going to add a defensive rebound on a 3 point shot to the other team')
 		utils.addStat(game,'defRebound', 1, utils.reverseHomeAway(team))
 	elif off:
 		utils.addStat(game, 'offRebound',1, team)
 	elif fouled and not made:
+		log.debug("going to set foul information for an agent ")
 		setFouls(game, 3)
 	else:
 		log.warning("should not be here in the sub3Pt function")
@@ -384,13 +391,16 @@ def sub2Pt(game, made, fouled, off=False):
 		score2Points(game, team)
 		utils.addStat(game,'2PtMade',1,team)
 		if fouled:
+			log.debug('Just scored 2 and going to set 1 foul for the one and one on')
 			setFouls(game, 1)
 	elif not made and not fouled and not off:
+		log.debug('Going to add a defensive rebound on a 2 point shot to the other team')
 		utils.addStat(game,'defRebound', 1, utils.reverseHomeAway(team))
 	elif off:
 		utils.addStat(game, 'offRebound',1,team)
 	elif fouled and not made:
 		setFouls(game, 2)
+		log.debug('Missed a 2 point shot but going to set 2 free throws')
 	else:
 		log.warning("OOPS. should not be here in sub2Pt")
 
@@ -409,6 +419,7 @@ def setFouls(game,f_type):
 		game['status']['frees'] = f_type
 		game['status']['free'] = True
 		game[otherTeam]['fouls'] += 1
+		game['status']['freeStatus'] = f_type
 
 
 def setBonusFouls(game, team, otherTeam):
@@ -417,12 +428,14 @@ def setBonusFouls(game, team, otherTeam):
 		game[team]['bonus'] = 'SB'
 		game['status']['free'] = '1and1Start'
 		game['status']['frees'] =  1
+		game['freeThrows']['freeType'] = '1and1'
 		return 'In the bonus, shooting the one and one.'
 		#chagne waiting action and stuff
 	elif globals.doubleBonus <= otherFouls:
 		game[team]['bonus'] = 'DB'
 		game['status']['free'] = True
 		game['status']['frees'] =  2
+		game['status']['freeType'] = 2
 		return 'In the double bonus, shooting two.'
 	else:
 		return 'Fouled but not in the bonus. Offense maintains possession'
@@ -430,7 +443,12 @@ def setBonusFouls(game, team, otherTeam):
 
 
 def changePossession(game):
-	if game['play']['playResult'] in globals.switchPossessions:
+	log.debug('determing if we need to change possesion.')
+	log.debug('the play result is {}'.format(game['play']['playResult']))
+	isIn =  game['play']['playResult'] in globals.switchPossessions
+	log.debug('is this a switch posession? Well the result is {}'.format(isIn))
+	if isIn and not game['status']['free']:
+		log.debug('We should be switching possession')
 		current = game['status']['possession']
 		game['status']['possession'] = utils.reverseHomeAway(current)
 
@@ -460,7 +478,8 @@ def getFreeThrowResult(game,number):
 	else:
 		team = game['status']['possession']
 		values = freeThrowDict[team]
-	endRange, begRange =  utils.getRange(values)
+	begRange, endRange =  utils.getRange(values)
+	log.debug('Trying to see if {} is between {} and {}'.format(number, begRange, endRange))
 	if begRange <= number <= endRange:
 		return True
 	else:
@@ -485,15 +504,20 @@ def setWaitingOn(game):
 	log.debug("current is {}".format(current))
 	log.debug("other is {}".format(other))
 	log.debug("just fouled is {}".format(game['play']['fouled']))
-	log.debug("shooting free throws is ")
+	log.debug("shooting free throws is {}".format(game['status']['free']))
 
 	if game['status']['free'] and game['play']['offensiveNumber']:
+		##just sent an offensive play and is now shooting a free throw
 		game['waitingOn'] = other
 		switchDefOff(game)
 	elif game['status']['free'] and game['play']['defensiveNumber']:
+		##offensive player was fouled and the defending team just
+		##sent their number in
 		game['waitingOn'] = current
 		switchDefOff(game)
 	elif game['play']['defensiveNumber']:
+		##someone just sent the defnesive number so we are switching
+		##waiting on to the offensive player
 		switchDefOff(game)
 		game['waitingOn'] = current
 	elif game['play']['offensiveNumber']:

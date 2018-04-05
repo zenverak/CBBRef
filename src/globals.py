@@ -23,12 +23,13 @@ conversionPlays = ['freeThrow',]
 nonShootingFoul = ['Foul', 'foul']
 offRebounds = ['Offensive rebound']
 turnovers = ['Steal', 'Turnover']
-switchPossessions = ['turnover', 'made','freeDone','block','missed']
+switchPossessions = ['turnover', 'made','freeDone','block','miss']
 
 datatag = " [](#datatag"
 singleBonus = 7
 doubleBonus = 10
 halfLength = 10*60
+otLength =  4*60
 maxRange = 1000
 
 ### Log ###
