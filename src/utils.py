@@ -155,15 +155,15 @@ def get_percent(game, team, stat):
 	if stat == '3':
 		if game[team]['3PtAttempted'] == 0:
 			return 0
-		return 100 * (game[team]['3PtMade']/(1.0 *game[team]['3PtAttempted']))
+		return round(100 * (game[team]['3PtMade']/(1.0 *game[team]['3PtAttempted'])),2)
 	elif stat == 'free':
 		if game[team]['FTAttempted'] == 0:
 			return 0
-		return 100 * game[team]['FTMade']/(1.0 *game[team]['FTAttempted'])
+		return round(100 * (game[team]['FTMade']/(1.0 *game[team]['FTAttempted'])),2)
 	else:
 		if game[team]['3PtAttempted'] == 0 and game[team]['2PtAttempted']==0:
 			return 0
-		return 100 * (game[team]['3PtMade']+game[team]['2PtMade'])/(1.0 *(game[team]['3PtAttempted']+game[team]['2PtAttempted']))
+		return round(100 * (game[team]['3PtMade']+game[team]['2PtMade'])/(1.0 *(game[team]['3PtAttempted']+game[team]['2PtAttempted'])),2)
 
 
 
@@ -457,12 +457,14 @@ def getFreeThrowString(game):
 		return "{} is shooting free throw {} of {}".format(game['status']['possession'], freeNum, max)
 
 def getFreeNumber(num,max):
-	if (num == 3) or (num == 2 and max == 2):
+	if (num == 3) or (num == 2 and max == 2) or (num == 1 and max == 1):
 		return 1
-	elif num == 2 and max in (3,2):
+	elif (num == 2 and max == 3) or (num == 1 and max == 2):
 		return 2
+	elif (num == 1 and max == 3):
+		return 3
 	else:
-		return num
+		return 69
 def getWaitingOnString(game):
 	string = "Error, no action"
 	if game['waitingAction'] == 'tip':
@@ -507,7 +509,7 @@ def extractPlayNumber(message):
 	if len(numbers) < 1:
 		log.debug("Couldn't find a number in message")
 		return -1, "It looks like you should be sending me a number, \
-						but I can't find one in your message."
+						but I can't find one in your message. Reply to this message with one"
 	if len(numbers) > 1:
 		log.debug("Found more than one number")
 		return -1, "It looks like you puts more than one number in your message"
@@ -515,7 +517,8 @@ def extractPlayNumber(message):
 	number = int(numbers[0])
 	if number < 1 or number > globals.maxRange:
 		log.debug("Number out of range: {}".format(number))
-		return -1, "I found {}, but that's not a valid number.".format(number)
+		return -1, "I found {}, but that's not a valid number. Reply to this \
+		message with a valid number between **1** and **{}** inclusive".format(number, globals.maxRange)
 
 	return number, None
 
@@ -591,9 +594,7 @@ def updateGameTimes(game):
 
 def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
-		  'timeouts': {'home': globals.timeouts, 'away': globals.timeouts},
-		  'requestedTimeout': {'home': 'none', 'away': 'none'},
-		  'free': False, 'frees': 0, 'freeStatus': None,
+		  'requestedTimeout': None,'free': False, 'frees': 0, 'freeStatus': None,
 		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'','tipped':False}
 	freeThrows = {'freeType':None}
 	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}

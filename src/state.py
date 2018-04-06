@@ -137,62 +137,97 @@ def getTimeByPlay(game,play):
 def updateTime(game, play, result, offenseHomeAway):
 	if result == 'FREE':
 		return ''
-
-	timeOffClock = getTimeByPlay(game, play)
+	elif result == 'FREEDONE':
+		timeOffClock = 0
+	else:
+		timeOffClock = getTimeByPlay(game, play)
 	log.debug("time off the clock was {}".format(timeOffClock))
 
-	if result in ["gain", "kneel"]:
-		if game['status']['requestedTimeout'][offenseHomeAway] == 'requested':
+	if result not in ["gain", "kneel"]:
+		if game['status']['requestedTimeout'] == 'requested':
 			log.debug("Using offensive timeout")
-			game['status']['requestedTimeout'][offenseHomeAway] = 'used'
-			game['status']['timeouts'][offenseHomeAway] -= 1
-		elif game['status']['requestedTimeout'][utils.reverseHomeAway(offenseHomeAway)] == 'requested':
-			log.debug("Using defensive timeout")
-			game['status']['requestedTimeout'][utils.reverseHomeAway(offenseHomeAway)] = 'used'
-			game['status']['timeouts'][utils.reverseHomeAway(offenseHomeAway)] -= 1
+			game['status']['requestedTimeout'] = 'used'
+			game[offenseHomeAway]['timeouts'] -= 1
+
+	if game['status']['requestedTimeout'] == 'used':
+		log.debug('Taking no time off clock bcuz timeout')
+		timeOffClock = 0
+
 
 	log.debug("Time off clock: {} : {}".format(game['status']['clock'], timeOffClock))
-
 	game['status']['clock'] -= timeOffClock
+	log.debug('clock after subtraction is {}'.format(game['status']['clock']))
 	timeMessage = "{} left".format(utils.renderTime(game['status']['clock']))
 
 	if game['status']['clock'] <= 0:
 		log.debug("End of half: {}".format(game['status']['half']))
 		actualTimeOffClock = timeOffClock + game['status']['clock']
-		if game['status']['half'] == 1:
-			timeMessage = "end of the first half"
-			game['status']['clock'] =  globals.halfLength
-			game['status']['posession'] = utils.reverseHomeAway(game['status']['wonTip'])
-			game['status']['waitingAction'] = 'play'
-			game['status']['half'] = 2
-		else:
-			if game['status']['half'] == 2:
-				if game['score']['home'] == game['score']['away']:
-					game['status']['tipped'] = False
-					log.debug("Score tied at end of 2nd half, going to overtime")
-					timeMessage = "end of regulation. The score is tied, we're going to overtime!"
-					if database.getGameDeadline(game['dataID']) > datetime.utcnow():
-						game['status']['halfType'] = 'overtimeTime'
-					else:
-						game['status']['halfType'] = 'overtimeNormal'
-					game['waitingAction'] = 'overtime'
-				else:
-					log.debug("End of game")
-					if game['score']['home'] > game['score']['away']:
-						victor = 'home'
-					else:
-						victor = 'away'
-					timeMessage = "that's the end of the game! {} has won!".format(utils.flair(game[victor]))
-					game['status']['halfType'] = 'end'
-				game['status']['clock'] = 0
-				game['waitingAction'] = 'end'
-
+		game['status']['clock'] = 0
+		if not game['status']['free']:
+			timeMessage = endHalf(game)
+			if game['status']['halfType'] != 'end' and game['status']['half'] > 2:
+				log.debug('Setting OverTime information')
+				game['status']['clock'] = globals.otLength
+				game['score']['halves'].append({'home':0,'away':0})
+				log.debug('Going to null the tip numbers out and make them all false in the game object.')
+				database.nullTipNumbers(game['dataID'])
+				game['tip']['homeTip'] = False
+				game['tip']['awayTip'] = False
+				game['home']['timeouts'] = 1
+				game['away']['timeouts'] = 1
+				coaches = [game['home']['coaches'][0], game['away']['coaches'][0]]
+				utils.sendTipNumberMessages(game, coaches)
 	else:
 		actualTimeOffClock = timeOffClock
 
 	utils.addStat(game, 'posTime', actualTimeOffClock, offenseHomeAway)
 
-	return "The play took {} seconds, {}".format(timeOffClock, timeMessage)
+	if game['status']['clock'] <= 0 and game['status']['halfType'] == 'end':
+		return "The play took {} seconds, {}".format(actualTimeOffClock, timeMessage)
+	elif game['status']['clock'] <= 0 and game['status']['halfType'] =='overtimeNormal':
+		return "The play took {} seconds, {}".format(actualTimeOffClock, timeMessage)
+	elif game['status']['clock'] <= 0 and game['status']['halfType'] not in ('end', 'overtimeNormal') and game['status']['free']:
+		return "The play took {} seconds, No time left on the clock".format(actualTimeOffClock)
+	else:
+		return "The play took {} seconds, {}".format(actualTimeOffClock, timeMessage)
+
+
+def endHalf(game):
+	timeMessage = 'Default Message'
+	game['status']['clock'] = 0
+	if game['status']['half'] == 1:
+		timeMessage = "end of the first half"
+		game['status']['clock'] =  globals.halfLength
+		game['status']['posession'] = utils.reverseHomeAway(game['status']['wonTip'])
+		game['status']['waitingAction'] = 'play'
+		game['status']['half'] = 2
+	else:
+		if game['status']['half'] >= 2:
+			if game['score']['home'] == game['score']['away']:
+				game['status']['tipped'] = False
+				game['status']['half'] += 1
+				if game['status']['half'] == 3:
+					log.debug("Score tied at end of 2nd half, going to overtime")
+					timeMessage = "end of regulation. The score is tied, we're going to overtime!"
+				else:
+					log.debut('Score still tied at the end of OT {}: Going into OT{}'.format(game['status']['half']-1, game['status']['half']))
+					timeMessage = 'End of OT number {}, going into OT {}'.format(game['status']['half']-1, game['status']['half'])
+				if database.getGameDeadline(game['dataID']) > datetime.utcnow() and 0 == 1:
+					game['status']['halfType'] = 'overtimeTime'
+				else:
+					game['status']['halfType'] = 'overtimeNormal'
+				game['waitingAction'] = 'tip'
+			else:
+				log.debug("End of game")
+				if game['score']['home'] > game['score']['away']:
+					victor = 'home'
+				else:
+					victor = 'away'
+				timeMessage = "that's the end of the game! {} has won!".format(utils.flair(game[victor]))
+				game['status']['halfType'] = 'end'
+				game['waitingAction'] = 'end'
+
+	return timeMessage
 
 
 def executePlay(game, play, number, numberMessage):
@@ -233,6 +268,7 @@ def executePlay(game, play, number, numberMessage):
 				game['waitingAction'] =  'play'
 				game['play']['playResult'] = 'freeDone'
 				game['freeThrows']['freeType'] = None
+				result = "FREEDONE"
 			else:
 				pass
 ##			database.clearDefensiveNumber(game['dataID'])
@@ -283,16 +319,17 @@ def executePlay(game, play, number, numberMessage):
 							game['status']['scored'] = True
 						log.debug("Result is a gain of {} points".format(points))
 				elif playResultName in globals.foulMissPlays:
+					log.debug("In foul Miss Plays")
 					##get numbers to see how many free thors we will shoot
 					setFouls(game, pointsTriedFor)
 					resultMessage = 'Going to shoot {} free throws.'.format(pointsTriedFor)
 					game['play']['playResult'] = 'fouled'
-					foulsAfter(game)
 				elif playResultName in globals.nonShootingFoul:
 					##This sets possession in the bonus check
 					resultMessage = setFouls(game, 0)
 					game['play']['playResult'] = 'fouled'
 				elif playResultName in globals.missPlays:
+					log.debug('In miss plays')
 					game['play']['playResult'] = 'miss'##No need to change who we are waitingon here
 					if pointsTriedFor == 2:
 						sub2Pt(game, False, False)
@@ -318,7 +355,10 @@ def executePlay(game, play, number, numberMessage):
 				elif playResultName in globals.turnovers:
 					game['play']['playResult'] = 'turnover'
 					setTurnovers(game, playResultName.lower())
-					resultMessage = 'Turned the ball over'
+					if playResultName == "Steal":
+						resultMessage = "Hark, a steal"
+					else:
+						resultMessage = 'Turned the ball over'
 				elif playResultName == 'Block':
 					resultMessage = "the shot was BLOCKED"
 					setBlock(game, 'block')

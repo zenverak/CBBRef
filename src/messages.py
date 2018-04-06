@@ -82,8 +82,11 @@ def processMessageNewGame(body, author):
 
 
 def processMessageTip(game, message):
-	number = re.findall('(\d+)', message.body)[0]
+	number, error = utils.extractPlayNumber(message.body)
+	if error is not None:
+		return False, "Didn't send me a number. Reply to the original message and send me a number this time"
 	author = str(message.author).lower()
+
 	log.debug('author is {}'.format(author))
 	log.debug('number is {}'.format(number))
 	log.debug("Processing tip ball where game is dirty is {}".format(game['dirty']))
@@ -132,7 +135,6 @@ def processMessageTip(game, message):
 
 def processMessageDefenseNumber(game, message, author):
 	log.debug("Processing defense number message")
-
 	number, resultMessage = utils.extractPlayNumber(message)
 	if resultMessage is not None:
 		return False, resultMessage
@@ -142,11 +144,13 @@ def processMessageDefenseNumber(game, message, author):
 
 	timeoutMessage = None
 	if message.find("timeout") > 0:
-		if game['status']['timeouts'][utils.reverseHomeAway(game['status']['possession'])] > 0:
-			game['status']['requestedTimeout'][utils.reverseHomeAway(game['status']['possession'])] = 'requested'
-			timeoutMessage = "Timeout requested successfully"
-		else:
-			timeoutMessage = "You requested a timeout, but you don't have any left"
+		timeoutMessage = "Defense cannot call timeouts in basketball."
+		# log.debug("defense called a timeout.")
+		# if game['status']['timeouts'][utils.reverseHomeAway(game['status']['possession'])] > 0:
+		# 	game['status']['requestedTimeout'][utils.reverseHomeAway(game['status']['possession'])] = 'requested'
+		# 	timeoutMessage = "Timeout requested successfully"
+		# else:
+		# 	timeoutMessage = "You requested a timeout, but you don't have any left"
 	log.debug("offense is currently {}".format(game['play']['offensiveNumber']))
 
 	log.debug("we were waiting on {}".format(game['waitingOn']))
@@ -190,10 +194,10 @@ def processMessageOffensePlay(game, message, author):
 	number, numberMessage = utils.extractPlayNumber(message)
 
 	timeoutMessageOffense = None
-	timeoutMessageDefense = None
 	if message.find("timeout") > 0:
-		if game['status']['timeouts'][game['status']['possession']] > 0:
-			game['status']['requestedTimeout'][game['status']['possession']] = 'requested'
+		log.debug("offense called a timeout")
+		if game[game['status']['possession']]['timeouts'] > 0:
+			game['status']['requestedTimeout'] = 'requested'
 		else:
 			timeoutMessageOffense = "The offense requested a timeout, but they don't have any left"
 
@@ -218,25 +222,15 @@ def processMessageOffensePlay(game, message, author):
 
 	success, resultMessage = state.executePlay(game, play, number, numberMessage)
 
-	if game['status']['requestedTimeout'][game['status']['possession']] == 'used':
+	if game['status']['requestedTimeout'] == 'used':
 		timeoutMessageOffense = "The offense is charged a timeout"
-	elif game['status']['requestedTimeout'][game['status']['possession']] == 'requested':
+	elif game['status']['requestedTimeout'] == 'requested':
 		timeoutMessageOffense = "The offense requested a timeout, but it was not used"
-	game['status']['requestedTimeout'][game['status']['possession']] = 'none'
-
-	if game['status']['requestedTimeout'][utils.reverseHomeAway(game['status']['possession'])] == 'used':
-		timeoutMessageDefense = "The defense is charged a timeout"
-	elif game['status']['requestedTimeout'][utils.reverseHomeAway(game['status']['possession'])] == 'requested':
-		timeoutMessageDefense = "The defense requested a timeout, but it was not used"
-	game['status']['requestedTimeout'][utils.reverseHomeAway(game['status']['possession'])] = 'none'
+	game['status']['requestedTimeout'] = 'none'
 
 	result = [resultMessage]
 	if timeoutMessageOffense is not None:
 		result.append(timeoutMessageOffense)
-	if timeoutMessageDefense is not None:
-		result.append(timeoutMessageDefense)
-
-
 	if playSelected != 'default':
 		state.setWaitingOn(game)
 		game['dirty'] = True
@@ -423,7 +417,7 @@ def processMessage(message):
 		if isMessage:
 			log.debug("Couldn't understand message")
 			resultMessage = reddit.replyMessage(message,
-			                    "I couldn't understand your message, please try again or message /u/zenverak if you need help.")
+			                    "Could not understand you. Please try again or message /u/zenverak if you need help.")
 		if resultMessage is None:
 			log.warning("Could not send message")
 	if game is not None and game['dirty']:

@@ -17,18 +17,18 @@ timeouts = 4
 offPlays = ['push', 'average','chew']
 pointResults = ['Made 2pt', 'Made 3pt', 'Made 3pt and Foul', 'Made 2pt and Foul']
 foulPlays = ['Made 3pt and Foul', 'Made 2pt and Foul','Fouled on 2 Pt', 'Fouled on 3Pt']
-foulMissPlays = ['Fouled on 2 Pt', 'Fouled on 3Pt']
+foulMissPlays = ['Fouled on 2pt', 'Fouled on 3pt']
 missPlays = ['Missed 2pt', 'Missed 3pt']
 conversionPlays = ['freeThrow',]
 nonShootingFoul = ['Foul', 'foul']
 offRebounds = ['Offensive rebound']
 turnovers = ['Steal', 'Turnover']
-switchPossessions = ['turnover', 'made','freeDone','block','miss']
+switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal']
 
 datatag = " [](#datatag"
 singleBonus = 7
 doubleBonus = 10
-halfLength = 10*60
+halfLength = 20
 otLength =  4*60
 maxRange = 1000
 

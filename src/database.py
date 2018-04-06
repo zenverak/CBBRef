@@ -97,6 +97,16 @@ def saveTipNumber(gameID, number,type_):
 	dbConn.commit()
 	return True
 
+def nullTipNumbers(gameID):
+	c = dbConn.cursor()
+	c.execute('''
+		UPDATE games
+		SET 'awayTip' = NULL, 'homeTip' = NULL
+		where ID = {}
+	'''.format(gameID))
+	dbConn.commit()
+	return True
+
 def getGameByCoach(coach):
 	c = dbConn.cursor()
 	result = c.execute('''
