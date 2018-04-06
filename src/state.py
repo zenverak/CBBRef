@@ -361,13 +361,8 @@ def executePlay(game, play, number, numberMessage):
 						resultMessage = 'Turned the ball over'
 				elif playResultName == 'Block':
 					resultMessage = "the shot was BLOCKED"
+					game['play']['playResult'] = 'block'
 					setBlock(game, 'block')
-					shotType = utils.coinToss()
-
-					if shotType:
-						sub2Pt(game, False, False, True)
-					else:
-						sub3Pt(game, False, False, True)
 
 
 				database.clearDefensiveNumber(game['dataID'])

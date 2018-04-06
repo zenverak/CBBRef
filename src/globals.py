@@ -28,7 +28,7 @@ switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal']
 datatag = " [](#datatag"
 singleBonus = 7
 doubleBonus = 10
-halfLength = 20
+halfLength = 5 * 60
 otLength =  4*60
 maxRange = 1000
 
