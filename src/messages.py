@@ -134,16 +134,25 @@ def processMessageTip(game, message):
 
 
 def processMessageDefenseNumber(game, message, author):
+	numberMessage = None
+	resultMessage = None
 	log.debug("Processing defense number message")
-	number, resultMessage = utils.extractPlayNumber(message)
-	if resultMessage is not None:
+	if message.find(globals.intFoul) > -1:
+		log.debug('defense will commit an intentional foul')
+		game['status']['ifoul'] = True
+	else:
+		number, resultMessage = utils.extractPlayNumber(message)
+	if resultMessage is not None and not game['status']['ifoul']:
 		return False, resultMessage
-
-	log.debug("Saving defense number: {}".format(number))
-	database.saveDefensiveNumber(game['dataID'], number)
+	elif resultMessage is None  and not game['status']['ifoul']:
+		log.debug("Saving defense number: {}".format(number))
+		database.saveDefensiveNumber(game['dataID'], number)
+	else:
+		log.debug('saving defesive number as 0 due to an intentional foul')
+		database.saveDefensiveNumber(game['dataID'],0)
 
 	timeoutMessage = None
-	if message.find("timeout") > 0:
+	if message.find("timeout") > -1:
 		timeoutMessage = "Defense cannot call timeouts in basketball."
 		# log.debug("defense called a timeout.")
 		# if game['status']['timeouts'][utils.reverseHomeAway(game['status']['possession'])] > 0:
@@ -181,8 +190,10 @@ def processMessageDefenseNumber(game, message, author):
 			"https://www.reddit.com/r/TestFakeCBB/wiki/refbot"
 			)
 	utils.sendGameComment(game, resultMessage, {'action': 'play'})
-
-	result = ["I've got {} as your number.".format(number)]
+	if not game['status']['ifoul']:
+		result = ["I've got {} as your number.".format(number)]
+	else:
+		result = ["You called an intentional foul"]
 	if timeoutMessage is not None:
 		result.append(timeoutMessage)
 	return True, '\n\n'.join(result)
@@ -191,10 +202,14 @@ def processMessageDefenseNumber(game, message, author):
 def processMessageOffensePlay(game, message, author):
 	log.debug("Processing offense number message")
 
-	number, numberMessage = utils.extractPlayNumber(message)
+	if game['status']['ifoul']:
+		numberMessage = ''
+		number = 0
+	else:
+		number, numberMessage = utils.extractPlayNumber(message)
 
 	timeoutMessageOffense = None
-	if message.find("timeout") > 0:
+	if message.find("timeout") > -1:
 		log.debug("offense called a timeout")
 		if game[game['status']['possession']]['timeouts'] > 0:
 			game['status']['requestedTimeout'] = 'requested'
@@ -202,30 +217,37 @@ def processMessageOffensePlay(game, message, author):
 			timeoutMessageOffense = "The offense requested a timeout, but they don't have any left"
 
 	playOptions = ['chew', 'average', 'push', 'regular']
-	playSelected = utils.findKeywordInMessage(playOptions, message)
-	play = "default"
-	if playSelected == "chew":
-		play = "chew"
-	elif playSelected == "average":
-		play = "average"
-	elif playSelected == "push":
-		play = "push"
-	elif game['status']['free']:
-		play = 'free'
-
-	elif playSelected == "mult":
-		log.debug("Found multiple plays")
-		return False, "I found multiple plays in your message. Please repost it with just the play and number."
+	if not game['status']['ifoul']:
+		playSelected = utils.findKeywordInMessage(playOptions, message)
+		play = "default"
+		if playSelected == "chew":
+			play = "chew"
+		elif playSelected == "average":
+			play = "average"
+		elif playSelected == "push":
+			play = "push"
+		elif game['status']['free']:
+			play = 'free'
+		elif playSelected == "mult":
+			log.debug("Found multiple plays")
+			return False, "I found multiple plays in your message. Please repost it with just the play and number."
+		else:
+			log.debug("Didn't find any plays")
+			return False, "I couldn't find a play in your message Please reply to this one with a play and a number."
 	else:
-		log.debug("Didn't find any plays")
-		return False, "I couldn't find a play in your message"
+		play = 'ifoul'
+		numberMessage = 'intentional foul'
+		playSelected = 'ifoul'
 
 	success, resultMessage = state.executePlay(game, play, number, numberMessage)
 
 	if game['status']['requestedTimeout'] == 'used':
 		timeoutMessageOffense = "The offense is charged a timeout"
-	elif game['status']['requestedTimeout'] == 'requested':
+	elif game['status']['requestedTimeout'] == 'requested' and not game['status']['ifoul']:
 		timeoutMessageOffense = "The offense requested a timeout, but it was not used"
+	elif game['status']['ifoul']:
+		timeoutMessageOffense = "The offense request a timeout but it could \
+		not be taken due to defense's intentional foul"
 	game['status']['requestedTimeout'] = 'none'
 
 	result = [resultMessage]
@@ -417,7 +439,7 @@ def processMessage(message):
 		if isMessage:
 			log.debug("Couldn't understand message")
 			resultMessage = reddit.replyMessage(message,
-			                    "Could not understand you. Please try again or message /u/zenverak if you need help.")
+								"Could not understand you. Please try again or message /u/zenverak if you need help.")
 		if resultMessage is None:
 			log.warning("Could not send message")
 	if game is not None and game['dirty']:

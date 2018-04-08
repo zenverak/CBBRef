@@ -128,7 +128,7 @@ while True:
 						if game['waitingAction'] != 'end':
 							utils.sendDefensiveNumberMessage(game)
 					else:
-						state.turnover(game)
+						state.technicalFouls(game)
 						utils.sendDefensiveNumberMessage(game)
 						resultMessage = "Turnover, {} has the ball.".format(utils.flair(game[game['waitingOn']]))
 

@@ -83,8 +83,8 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		log.debug("Coach added to away: {}".format(user))
 
 	log.debug("Game started, posting tip ball comment")
-	message = "The ball is throw in the air! {},  {}, Respond to my message \
-				for a TIP number".format(getCoachString(game, 'home'),
+	message = "The ball is throw in the air! {},  {}, Respond to the DM message \
+				I sent you for a TIP number".format(getCoachString(game, 'home'),
 											getCoachString(game, 'away')
 											)
 	sendGameComment(game, message, {'action': 'tip'})
@@ -203,7 +203,7 @@ def renderGame(game):
 		bldr.append("\n\n")
 		bldr.append("Shooting|Shooting %|3pters|3pt %|Free Throws|Free Throw %\
 											|Turnovers|Fouls|Bonus|Timeouts\n")
-		bldr.append(":-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:\n")
+		bldr.append(":-:|:-:|:-:|:--:|:-:|:-:|:-:|:-:|:-:|:-:\n")
 		bldr.append("{}/{}|{} %|{}/{}|{} %|{}/{}|{} %|{}|{}|{}|{}".format(
 			made,
 			att,
@@ -222,19 +222,22 @@ def renderGame(game):
 
 	bldr.append("Playclock|Half\n")
 	bldr.append(":-:|:-:\n")
+	half = game['status']['half']
+	if half > 2:
+		half = 'OT{}'.format(half-2)
 	bldr.append("{}|{}\n".format(
 		renderTime(game['status']['clock']),
 		game['status']['half']
 		))
 	bldr.append("\n___\n\n")
-	if game['isOverTime']:
+	if game['status']['half'] > 2:
 		bldr.append("Team|H1|H2|")
 		for i in range(1,game['half']+1-2):
 			bldr.append("OT{}|".format(i))
 		bldr.append('Total\n')
 		bldr.append(":-:|:-:|:-:|")
 		for i in range(1,game['half']+1-2):
-			bldr.append(":-:|".format(i))
+			bldr.append(":-:|")
 		bldr.append(':-:\n')
 	else:
 		bldr.append("Team|H1|H2|Total\n")
@@ -246,7 +249,7 @@ def renderGame(game):
 		bldr.append('|')
 		bldr.append(str(game['score']['halves'][1][team]))
 		bldr.append('|')
-		if game['isOverTime']:
+		if game['status']['half']>2:
 			for i in range(3, int(game['half'])+1):
 				bldr.append(str(game['score']['halves'][i][team]))
 				bldr.append('|')
@@ -595,7 +598,8 @@ def updateGameTimes(game):
 def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
 		  'requestedTimeout': None,'free': False, 'frees': 0, 'freeStatus': None,
-		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'','tipped':False}
+		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'',
+		  'tipped':False, 'ifoul':False}
 	freeThrows = {'freeType':None}
 	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}

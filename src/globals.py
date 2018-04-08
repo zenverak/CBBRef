@@ -15,15 +15,16 @@ timeouts = 4
 
 ### Constants ###
 offPlays = ['push', 'average','chew']
-pointResults = ['Made 2pt', 'Made 3pt', 'Made 3pt and Foul', 'Made 2pt and Foul']
-foulPlays = ['Made 3pt and Foul', 'Made 2pt and Foul','Fouled on 2 Pt', 'Fouled on 3Pt']
-foulMissPlays = ['Fouled on 2pt', 'Fouled on 3pt']
-missPlays = ['Missed 2pt', 'Missed 3pt']
+pointResults = ['made 2pt', 'made 3pt', 'made 3pt and foul', 'made 2pt and foul']
+foulPlays = ['made 3pt and foul', 'made 2pt and foul','fouled on 2 pt', 'fouled on 3pt']
+foulMissPlays = ['fouled on 2pt', 'fouled on 3pt']
+missPlays = ['missed 2pt', 'missed 3pt']
 conversionPlays = ['freeThrow',]
-nonShootingFoul = ['Foul', 'foul']
-offRebounds = ['Offensive rebound']
-turnovers = ['Steal', 'Turnover']
+nonShootingFoul = ['Foul', 'foul', 'ifoul']
+offRebounds = ['offensive rebound']
+turnovers = ['steal', 'turnover']
 switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal']
+intFoul ='ifoul'
 
 datatag = " [](#datatag"
 singleBonus = 7

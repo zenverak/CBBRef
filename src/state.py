@@ -275,6 +275,10 @@ def executePlay(game, play, number, numberMessage):
 		else:
 			resultMessage = "It looks like /]you're trying to get the extra point after a touchdown, but this isn't a valid play"
 			success = False
+	elif game['status']['ifoul']:
+		resultMessage = setFouls(game, 0)
+		game['play']['playResult'] = 'fouled'
+
 	else:
 		if play in globals.offPlays:
 			if number == -1:
@@ -286,14 +290,14 @@ def executePlay(game, play, number, numberMessage):
 				log.debug("numberResult was {}".format(numberResult))
 				log.debug("Executing normal play: {}".format(play))
 				result = getPlayResult(game, play, numberResult)
-				playResultName = result['result']
+				playResultName = result['result'].lower()
 				log.debug('playResultName is {}'.format(playResultName))
 				ptf = re.search('2|3', playResultName)
 				log.debug("ptf is {}".format(ptf))
 				if ptf:
 					pointsTriedFor = int(ptf.group(0))
 					log.debug("this shot as an attempt for {} points".format(pointsTriedFor))
-				if playResultName in globals.pointResults :
+				if playResultName.lower() in globals.pointResults :
 					if 'points' not in result:
 						log.warning("Result is a score, but I couldn't find any points")
 						resultMessage = "Result of play is a number of points, but something went wrong and I couldn't find what number"
@@ -359,7 +363,7 @@ def executePlay(game, play, number, numberMessage):
 						resultMessage = "Hark, a steal"
 					else:
 						resultMessage = 'Turned the ball over'
-				elif playResultName == 'Block':
+				elif playResultName == 'block':
 					resultMessage = "the shot was BLOCKED"
 					game['play']['playResult'] = 'block'
 					setBlock(game, 'block')
@@ -371,8 +375,13 @@ def executePlay(game, play, number, numberMessage):
 			success = False
 	messages = [resultMessage]
 	if resultMessage is not None:
+		if game['status']['ifoul']:
+			game['status']['ifoul'] = False
+			diffMessage = None
+			timeMessage = 'No time off due to intentional foul'
 		if timeMessage is None:
 			timeMessage = updateTime(game, play, result, startingPossessionHomeAway)
+
 		messages.append(timeMessage)
 	if diffMessage is not None:
 		messages.append(diffMessage)
@@ -449,31 +458,42 @@ def setFouls(game,f_type):
 	team = game['status']['possession']
 	otherTeam = utils.reverseHomeAway(team)
 	if f_type == 0:
-		return setBonus(game, team, otherTeam)
+		return setBonusFouls(game, team, otherTeam)
 	else:
 		game['status']['frees'] = f_type
 		game['status']['free'] = True
 		game[otherTeam]['fouls'] += 1
 		game['status']['freeStatus'] = f_type
 
+def technicalFouls(game):
+	pass
 
 def setBonusFouls(game, team, otherTeam):
+	message = ''
+	utils.addStat(game, 'fouls',1, otherTeam)
 	otherFouls =  int(game[otherTeam]['fouls'])
 	if  globals.singleBonus <= otherFouls <= globals.doubleBonus:
 		game[team]['bonus'] = 'SB'
 		game['status']['free'] = '1and1Start'
 		game['status']['frees'] =  1
 		game['freeThrows']['freeType'] = '1and1'
-		return 'In the bonus, shooting the one and one.'
+		message = 'In the bonus, shooting the one and one.'
 		#chagne waiting action and stuff
 	elif globals.doubleBonus <= otherFouls:
 		game[team]['bonus'] = 'DB'
 		game['status']['free'] = True
 		game['status']['frees'] =  2
 		game['status']['freeType'] = 2
-		return 'In the double bonus, shooting two.'
+		message = 'In the double bonus, shooting two.'
 	else:
-		return 'Fouled but not in the bonus. Offense maintains possession'
+		message = 'Fouled but not in the bonus. Offense maintains possession'
+	if game['status']['ifoul']:
+		foulMessage = ['Intentional Foul by the defense']
+		foulMessage.append(message)
+		return ''.join(foulMessage)
+	else:
+		return message
+
 
 
 
@@ -492,7 +512,7 @@ def setTurnovers(game,turnover):
 	s_turnover =  "{}{}".format(turnover,'s')
 	current =  game['status']['possession']
 	if turnover == 'steal':
-		utils.addState(game, s_turnover, 1, utils.reverseHomeAway(current))
+		utils.addStat(game, s_turnover, 1, utils.reverseHomeAway(current))
 	utils.addStat(game, 'turnovers', 1, current)
 
 
