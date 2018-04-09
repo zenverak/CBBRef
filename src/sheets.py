@@ -21,7 +21,7 @@ APPLICATION_NAME = 'grabbing data from google sheets'
 
 play_dict = {}
 time_dict = {}
-
+flgs = None
 def get_credentials():
     """Gets valid user credentials from storage.
 
@@ -60,7 +60,7 @@ def return_data(service, ranges):
 
 
 
-    
+
 def get_values():
     """Shows basic usage of the Sheets API.
 
@@ -78,13 +78,13 @@ def get_values():
     category_ranges = ['push','average','chew']
 
     free_throw_headers = ['home', 'away', 'neutral']
-    
+
 
     range_headers = 'A2:Z2'
 
 
 
-    
+
     headers = return_data(service, range_headers)
     push_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(3,12)]
     average_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(15,24)]
@@ -103,7 +103,7 @@ def get_values():
     time_off_values = [return_data(service, range_) for range_ in time_off_ranges]
     return headers, push_values, average_values, chew_values, free_throw_values, time_off_values
 
-    
+
 
 def format_head(head):
     return [h for h in head[0] if h!='']
@@ -133,7 +133,7 @@ def return_playdict():
                  'average':{},
                  'chew':{},
                  'freeThrows':{'home':'','away':'','neutral':''}}
- 
+
     for key in play_dict:
         if key == 'freeThrows':
             pass
@@ -209,9 +209,9 @@ def get_time_dict(times):
         play_type = get_play_type_name(tfp[1])
         time_dict[play_style][play_type] = int(tfp[2].replace(':',''))
     return time_dict
-        
-        
-    
+
+
+
 def get_all_dicts():
     global play_dict
     global time_dict
@@ -222,6 +222,3 @@ def get_all_dicts():
 
 if __name__ == '__main__':
     get_all_dicts()
-
-    
-    
