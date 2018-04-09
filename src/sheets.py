@@ -21,7 +21,7 @@ APPLICATION_NAME = 'grabbing data from google sheets'
 
 play_dict = {}
 time_dict = {}
-flgs = None
+flags = None
 def get_credentials():
     """Gets valid user credentials from storage.
 
