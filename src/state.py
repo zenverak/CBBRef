@@ -245,6 +245,7 @@ def executePlay(game, play, number, numberMessage):
 			log.debug("Trying to shoot a free throw play, but didn't have a number")
 			resultMessage = numberMessage
 			success = False
+			return False, resultMessage
 		elif number > -1:
 			game['status']['frees'] -= 1
 
@@ -351,7 +352,7 @@ def executePlay(game, play, number, numberMessage):
 						log.debug('By random choice this was a 2 point shot')
 						sub2Pt(game, False, False, True)
 					else:
-						log.debug('By random chocie this was a 3 point shot')
+						log.debug('By random choice this was a 3 point shot')
 						sub3Pt(game, False, False, True)
 
 
@@ -472,23 +473,25 @@ def setBonusFouls(game, team, otherTeam):
 	message = ''
 	utils.addStat(game, 'fouls',1, otherTeam)
 	otherFouls =  int(game[otherTeam]['fouls'])
-	if  globals.singleBonus <= otherFouls <= globals.doubleBonus:
+	if  globals.singleBonus <= otherFouls < globals.doubleBonus:
 		game[team]['bonus'] = 'SB'
 		game['status']['free'] = '1and1Start'
 		game['status']['frees'] =  1
 		game['freeThrows']['freeType'] = '1and1'
-		message = 'In the bonus, shooting the one and one.'
+		message = 'In the bonus, shooting the one and one. '
 		#chagne waiting action and stuff
 	elif globals.doubleBonus <= otherFouls:
 		game[team]['bonus'] = 'DB'
 		game['status']['free'] = True
 		game['status']['frees'] =  2
 		game['status']['freeType'] = 2
+		game['status']['freeStatus'] = 2
 		message = 'In the double bonus, shooting two.'
 	else:
-		message = 'Fouled but not in the bonus. Offense maintains possession'
+		message = 'Fouled but not in the bonus. Offense maintains possession. '
+		game['status']['fouledOnly'] = True
 	if game['status']['ifoul']:
-		foulMessage = ['Intentional Foul by the defense']
+		foulMessage = ['Intentional Foul by the defense. ']
 		foulMessage.append(message)
 		return ''.join(foulMessage)
 	else:
@@ -561,10 +564,12 @@ def setWaitingOn(game):
 	log.debug("just fouled is {}".format(game['play']['fouled']))
 	log.debug("shooting free throws is {}".format(game['status']['free']))
 
-	if game['status']['free'] and game['play']['offensiveNumber']:
-		##just sent an offensive play and is now shooting a free throw
+	if (game['status']['free'] or game['status']['fouledOnly']) and game['play']['offensiveNumber']:
+		##just sent an offensive play and is now shooting a free throw or
+		##fouled and possession stays the same.
 		game['waitingOn'] = other
 		switchDefOff(game)
+		game['status']['fouledOnly'] =  False
 	elif game['status']['free'] and game['play']['defensiveNumber']:
 		##offensive player was fouled and the defending team just
 		##sent their number in

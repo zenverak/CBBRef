@@ -450,6 +450,7 @@ def getCurrentPlayString(game):
 def getFreeThrowString(game):
 	max = game['status']['freeStatus']
 	numLeft = game['status']['frees']
+	log.debug("This is for a max of {} and there are {} left".format(max, numLeft))
 	if game['freeThrows']['freeType'] == '1and1':
 		if game['status']['free'] == True:
 			return "{} is shooting the backend of the 1 and 1".format(game['status']['possession'])
@@ -467,7 +468,7 @@ def getFreeNumber(num,max):
 	elif (num == 1 and max == 3):
 		return 3
 	else:
-		return 69
+		return 696969696969696969696969696969696969
 def getWaitingOnString(game):
 	string = "Error, no action"
 	if game['waitingAction'] == 'tip':
@@ -496,10 +497,15 @@ def sendDefensiveNumberMessage(game, mess=None, recpt=None):
 		reddit.sendMessage(game[game['waitingOn']]['coaches'][0], 'Tip result',
 			   embedTableInMessage(mess, {'action': 'play'}))
 	else:
+		if not game['status']['free']:
+			messageToSend = "{}\n\nReply with a number between **1** and **{}**, inclusive \
+		 	or you can send ifoul for an intentional foul. There is currently {} \
+			left in the {} half".format(getCurrentPlayString(game), globals.maxRange, renderTime(game['status']['clock']), getNthWord(game['status']['half']))
+		else:
+			messageToSend = "{}\n\nReply with a number between **1** and **{}**, inclusive".format(getCurrentPlayString(game), globals.maxRange)
 		reddit.sendMessage(game[defenseHomeAway]['coaches'],
 			   "{} vs {}".format(game['away']['name'], game['home']['name']),
-			   embedTableInMessage("{}\n\nReply with a number between **1** and **{}**, inclusive.".format(getCurrentPlayString(game), globals.maxRange)
-					       , {'action': 'play'}))
+			   embedTableInMessage(messageToSend, {'action': 'play'}))
 
 	messageResult = reddit.getRecentSentMessage()
 	log.debug('messageResult is {}'.format(messageResult))
@@ -512,7 +518,7 @@ def extractPlayNumber(message):
 	if len(numbers) < 1:
 		log.debug("Couldn't find a number in message")
 		return -1, "It looks like you should be sending me a number, \
-						but I can't find one in your message. Reply to this message with one"
+						but I can't find one in your message. Reply to the original message"
 	if len(numbers) > 1:
 		log.debug("Found more than one number")
 		return -1, "It looks like you puts more than one number in your message"
@@ -599,7 +605,7 @@ def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
 		  'requestedTimeout': None,'free': False, 'frees': 0, 'freeStatus': None,
 		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'',
-		  'tipped':False, 'ifoul':False}
+		  'tipped':False, 'ifoul':False, 'fouledOnly':False}
 	freeThrows = {'freeType':None}
 	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}

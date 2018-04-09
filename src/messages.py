@@ -181,7 +181,7 @@ def processMessageDefenseNumber(game, message, author):
 			)
 	else:
 		resultMessage = "{} has submitted their number for your free throw. {} you're up\
-		.\n\n{}\n\n{} reply with your free throw number. [Play list]({})".format(
+		.\n\n{}\n\n{} reply with your free throw number.".format(
 			game[utils.reverseHomeAway(game['waitingOn'])]['name'],
 			game[game['waitingOn']]['name'],
 			utils.getCurrentPlayString(game),
@@ -233,7 +233,7 @@ def processMessageOffensePlay(game, message, author):
 			return False, "I found multiple plays in your message. Please repost it with just the play and number."
 		else:
 			log.debug("Didn't find any plays")
-			return False, "I couldn't find a play in your message Please reply to this one with a play and a number."
+			return False, "I couldn't find a play in your message. Please reply to this one with a play and a number."
 	else:
 		play = 'ifoul'
 		numberMessage = 'intentional foul'
@@ -253,10 +253,10 @@ def processMessageOffensePlay(game, message, author):
 	result = [resultMessage]
 	if timeoutMessageOffense is not None:
 		result.append(timeoutMessageOffense)
-	if playSelected != 'default':
+	if playSelected != 'default' and success:
 		state.setWaitingOn(game)
 		game['dirty'] = True
-	if game['waitingAction'] == 'play' and playSelected != 'default':
+	if game['waitingAction'] == 'play' and playSelected != 'default' and success:
 		utils.sendDefensiveNumberMessage(game)
 	elif game['waitingAction'] == 'overtime':
 		log.debug("Starting overtime, posting coin toss comment")
