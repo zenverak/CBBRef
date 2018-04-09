@@ -39,11 +39,13 @@ def get_credentials():
         os.makedirs(credential_dir)
     credential_path = os.path.join(credential_dir,
                                    'sheets.googleapis.com-python-quickstart.json')
+    print ('cred path is now {}'.format(credential_path))
     #
     # credential_path = os.path.join('.\\','client_secret.json')
     store = Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:
+        print('going to create the credentials')
         flow = client.flow_from_clientsecrets(CLIENT_SECRET_FILE, SCOPES)
         flow.user_agent = APPLICATION_NAME
         credentials = tools.run_flow(flow, store, flags)
