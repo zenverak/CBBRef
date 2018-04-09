@@ -31,9 +31,11 @@ def get_credentials():
     Returns:
         Credentials, the obtained credential.
     """
-    home_dir = 'src'
+    home_dir = os.path.abspath('src\')
+    print('home dir is {}'.format(home_dir))
     credential_dir = os.path.join(home_dir, '.credentials')
     if not os.path.exists(credential_dir):
+        print('making a directory')
         os.makedirs(credential_dir)
     credential_path = os.path.join(credential_dir,
                                    'sheets.googleapis.com-python-quickstart.json')
