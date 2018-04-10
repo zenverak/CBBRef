@@ -3,5 +3,6 @@ logs/*
 __pycache__/*
 *.db
 src/__pycache__
+src/.credentials
 *.ini
 *.json

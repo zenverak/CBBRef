@@ -40,8 +40,6 @@ def get_credentials():
     credential_path = os.path.join(credential_dir,
                                    'sheets.googleapis.com-python-quickstart.json')
     print ('cred path is now {}'.format(credential_path))
-    #
-    # credential_path = os.path.join('.\\','client_secret.json')
     store = Storage(credential_path)
     credentials = store.get()
     if not credentials or credentials.invalid:

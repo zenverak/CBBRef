@@ -36,6 +36,21 @@ def init():
 			FOREIGN KEY(GameID) REFERENCES games(ID)
 		)
 	''')
+	c.execute('''
+		CREATE TABLE IF NOT EXISTS plays (
+		ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		GameID INTEGER NOT NULL,
+		OffCoach VARCHAR(80) NOT NULL,
+		DefCoach VARCHAR(80) NOT NULL,
+		Playtype char(10),
+		Call char(30),
+		ONum INTEGER NOT NULL,
+		DNum INTEGER NOT NULL,
+		Diff INTEGER NOT NULL,
+		Result char(20),
+		FOREIGN KEY(GameID) REFERENCES games(ID)
+		)
+	''')
 	dbConn.commit()
 
 
@@ -43,6 +58,19 @@ def init():
 def close():
 	dbConn.commit()
 	dbConn.close()
+
+def insertNewPlays(gameid, ocoach, dcoach, ptype, call, onum, dnum, diff, result):
+
+	c = dbConn.cursor()
+	try:
+		c.execute('''insert into plays(GameID ,OffCoach ,DefCoach ,Playtype ,Call ,ONum ,Dnum ,Diff , Result)\
+	values(?,?,?,?,?,?,?,?,?)''',(gameid ,ocoach ,dcoach ,ptype ,call ,onum ,dnum ,diff ,result))
+		print ("should be inserted")
+
+	except sqlite3.IntegrityError:
+		return False
+	dbConn.commit()
+	return c.lastrowid
 
 
 def createNewGame(thread):

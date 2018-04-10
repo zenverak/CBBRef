@@ -200,6 +200,13 @@ def processMessageDefenseNumber(game, message, author):
 
 
 def processMessageOffensePlay(game, message, author):
+	##set some information for later.
+	current = game['status']['possession']
+	other = utils.reverseHomeAway(current)
+	game['play']['ocoach'] = game[current]['coaches'][0]
+	game['play']['dcoach'] = game[other]['coaches'][0]
+	game['play']['playMessage'] = message
+
 	log.debug("Processing offense number message")
 
 	if game['status']['ifoul']:
@@ -207,6 +214,8 @@ def processMessageOffensePlay(game, message, author):
 		number = 0
 	else:
 		number, numberMessage = utils.extractPlayNumber(message)
+
+
 
 	timeoutMessageOffense = None
 	if message.find("timeout") > -1:
@@ -238,6 +247,7 @@ def processMessageOffensePlay(game, message, author):
 		play = 'ifoul'
 		numberMessage = 'intentional foul'
 		playSelected = 'ifoul'
+	game['status']['playType'] = play
 
 	success, resultMessage = state.executePlay(game, play, number, numberMessage)
 
@@ -257,6 +267,8 @@ def processMessageOffensePlay(game, message, author):
 		state.setWaitingOn(game)
 		game['dirty'] = True
 	if game['waitingAction'] == 'play' and playSelected != 'default' and success:
+		log.debug('going to set the play data up, save it, then remove it')
+		utils.insertPlayData(game)
 		utils.sendDefensiveNumberMessage(game)
 	elif game['waitingAction'] == 'overtime':
 		log.debug("Starting overtime, posting coin toss comment")
@@ -322,12 +334,12 @@ def processMessageKickGame(body):
 
 def processMessage(message):
 	## Determine if comment or dm
+
 	if isinstance(message, praw.models.Message):
 		isMessage = True
-		log.debug("Processing a message from /u/{} : {}".format(str(message.author), message.id))
 	else:
 		isMessage = False
-		log.debug("Processing a comment from /u/{} : {}".format(str(message.author), message.id))
+	log.debug("Processing a comment from /u/{} with id {} and body {}".format(str(message.author), message.id,message.body))
 
 	response = None
 	success = None
@@ -442,6 +454,7 @@ def processMessage(message):
 								"Could not understand you. Please try again or message /u/zenverak if you need help.")
 		if resultMessage is None:
 			log.warning("Could not send message")
+
 	if game is not None and game['dirty']:
 		log.debug("Game is dirty, updating thread")
 		utils.updateGameThread(game)

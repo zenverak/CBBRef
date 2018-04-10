@@ -110,11 +110,13 @@ while True:
 					log.warning(traceback.format_exc())
 
 			for threadId in database.getGamesPastPlayclock():
+				if 1 == 1:
+					break
 				log.debug("Game past playclock: {}".format(threadId))
 				game = utils.getGameByThread(threadId)
 				game[game['waitingOn']]['playclockPenalties'] += 1
-				penaltyMessage = "{} has not sent their number in over 24 hours, playclock penalty. This is their {} penalty.".format(
-					utils.getCoachString(game, game['waitingOn']), utils.getNthWord(game[game['waitingOn']]['playclockPenalties']))
+				penaltyMessage = "{} has not sent their number in over {} hours, playclock penalty. This is their {} penalty.".format(
+					utils.getCoachString(game, game['waitingOn']),globals.delayHours, utils.getNthWord(game[game['waitingOn']]['playclockPenalties']))
 				if game[game['waitingOn']]['playclockPenalties'] >= 3:
 					log.debug("3 penalties, game over")
 					game['status']['halfType'] = 'end'

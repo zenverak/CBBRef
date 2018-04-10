@@ -11,6 +11,7 @@ DATABASE_NAME = "database.db"
 SUBREDDIT_LINK = "https://www.reddit.com/r/{}/comments/".format(SUBREDDIT)
 ACCOUNT_NAME = "default"
 timeouts = 4
+delayHours = 24
 
 
 ### Constants ###

@@ -600,6 +600,44 @@ def updateGameTimes(game):
 	game['playclock'] = database.getGamePlayed(game['dataID'])
 	game['dirty'] = database.getGameDeadline(game['dataID'])
 
+def insertPlayData(game):
+	'''
+	Used to store data. Will truncate the message the coach sends in if it
+	is too long for the field. Obviously nearly anything can be sent
+	'''
+	message = game['play']['playMessage']
+	if len(message) > 30:
+		message = message[0:30]
+	gameID =  game['dataID']
+	ocoach = game['play']['ocoach']
+	dcoach = game['play']['dcoach']
+	dnum = game['play']['dnum']
+	onum =  game['play']['onum']
+	ptype = 'test'
+	diff = game['play']['diff']
+	result = game['play']['result']
+	database.insertNewPlays(gameID, ocoach, dcoach, ptype, message, onum, dnum, diff, result)
+	resetPlayData(game)
+
+
+def getGamePlaysData(game):
+	'''
+	Used to retrieve all plays for a game for the purposes of a post game thread
+	'''
+	pass
+
+
+
+
+
+def resetPlayData(game):
+	game['play']['dnum'] = 0
+	game['play']['onum'] = 0
+	game['play']['diff'] = 0
+	game['play']['playMessage'] = None
+	game['play']['ocoach'] = ''
+	game['play']['dcoach'] = ''
+	game['play']['result'] = ''
 
 def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
@@ -609,7 +647,8 @@ def newGameObject(home, away):
 	freeThrows = {'freeType':None}
 	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
-	play = {'fouled':False,'defensiveNumber':True, 'offensiveNumber':False, 'playResult':'', 'playDesc':''}
+	play = {'fouled':False,'defensiveNumber':True, 'offensiveNumber':False, 'playResult':'', 'playDesc':'', 'dnum':0,
+	'onum':0, 'diff':0, 'playMessage':None, 'ocoach':'', 'dcoach':'', 'result':'', 'playType':''}
 	game = {'home': home, 'away': away, 'poss': [], 'status': status, 'score': score, 'errored': 0, 'waitingId': None,
 		'waitingAction': 'tip', 'waitingOn': 'away', 'dataID': -1, 'thread': "empty",
 		'dirty': False, 'startTime': None, 'location': None, 'station': None, 'playclock': datetime.utcnow() + timedelta(hours=24),

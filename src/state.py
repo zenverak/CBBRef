@@ -68,11 +68,16 @@ def getNumberDiffForGame(game, offenseNumber):
 		log.warning("Something went wrong, couldn't get a defensive number for that game")
 		return -1
 
+
 	straightDiff = abs(offenseNumber - defenseNumber)
 	aroundRightDiff = abs(abs(globals.maxRange-offenseNumber) + defenseNumber)
 	aroundLeftDiff = abs(offenseNumber + abs(globals.maxRange-defenseNumber))
 
 	difference = min([straightDiff, aroundRightDiff, aroundLeftDiff])
+
+	game['play']['onum'] = offenseNumber
+	game['play']['dnum'] = defenseNumber
+	game['play']['diff'] = difference
 
 	numberMessage = "Offense: {}\n\nDefense: {}\n\nDifference: {}".format(offenseNumber, defenseNumber, difference)
 	log.debug("Offense: {} Defense: {} Result: {}".format(offenseNumber, defenseNumber, difference))
@@ -238,6 +243,12 @@ def executePlay(game, play, number, numberMessage):
 	success = True
 	timeMessage = None
 	fouled = False
+
+
+
+
+
+
 	log.debug("starting to execute Play with play being {} and number being {}".format(play, number))
 	if game['status']['free'] != False:
 		result = "FREE"
@@ -253,7 +264,9 @@ def executePlay(game, play, number, numberMessage):
 			numberResult, diffMessage = getNumberDiffForGame(game, number)
 			freeResult = getFreeThrowResult(game,numberResult)
 
+
 			if freeResult:
+				game['play']['result'] = 'Free Made'
 				log.debug("Successful Free Throw")
 				resultMessage = "The Free throw was successful"
 				utils.addStat(game,'FTMade',1,startingPossessionHomeAway)
@@ -262,6 +275,7 @@ def executePlay(game, play, number, numberMessage):
 					game['status']['frees'] = 1
 					game['status']['free'] = True
 			else:
+				game['play']['result'] = 'Free Missed'
 				log.debug("failed free throw")
 				resultMessage =  "The free throw has cursed you. Suffer."
 			if game['status']['frees'] == 0:
@@ -291,6 +305,7 @@ def executePlay(game, play, number, numberMessage):
 				log.debug("numberResult was {}".format(numberResult))
 				log.debug("Executing normal play: {}".format(play))
 				result = getPlayResult(game, play, numberResult)
+				game['play']['result'] = result['result']
 				playResultName = result['result'].lower()
 				log.debug('playResultName is {}'.format(playResultName))
 				ptf = re.search('2|3', playResultName)
