@@ -229,14 +229,14 @@ def processMessageOffensePlay(game, message, author):
 	if not game['status']['ifoul']:
 		playSelected = utils.findKeywordInMessage(playOptions, message)
 		play = "default"
-		if playSelected == "chew":
+		if game['status']['free']:
+			play = 'free'
+		elif playSelected == "chew":
 			play = "chew"
 		elif playSelected == "average":
 			play = "average"
 		elif playSelected == "push":
 			play = "push"
-		elif game['status']['free']:
-			play = 'free'
 		elif playSelected == "mult":
 			log.debug("Found multiple plays")
 			return False, "I found multiple plays in your message. Please repost it with just the play and number."
@@ -247,7 +247,7 @@ def processMessageOffensePlay(game, message, author):
 		play = 'ifoul'
 		numberMessage = 'intentional foul'
 		playSelected = 'ifoul'
-	game['status']['playType'] = play
+	game['play']['playType'] = play
 
 	success, resultMessage = state.executePlay(game, play, number, numberMessage)
 
@@ -302,15 +302,19 @@ def processMessagePauseGame(body):
 
 def processMessageAbandonGame(body):
 	log.debug("Processing abandon game message")
-	threadIds = re.findall('([\da-z]{6})', body)
+	threadIds = re.findall('(?: )([\da-z]{6})', body)
 	if len(threadIds) < 1:
 		log.debug("Couldn't find a thread id in message")
 		return "Couldn't find a thread id in message"
 	log.debug("Found thread id: {}".format(threadIds[0]))
 
-	database.endGame(threadIds[0])
+	success = database.endGame(threadIds[0])
 
-	return "Game {} abandoned".format(threadIds[0])
+	if success:
+
+		return "Game {} abandoned".format(threadIds[0])
+	else:
+		return "Make sure that {} was a real game thread".format(threadIds[0])
 
 
 def processMessageKickGame(body):
@@ -407,7 +411,7 @@ def processMessage(message):
 		else:
 			log.debug("Couldn't get a game for /u/{}".format(author))
 	else:
-		log.debug("Parsing non-datatable message")
+		log.debug("Parsing non-datatable message with body {} from author {}".format(body, str(message.author).lower()))
 		if "newgame" in body and isMessage:
 			response = processMessageNewGame(message.body, str(message.author))
 		if "kick" in body and isMessage and str(message.author).lower() == globals.OWNER:
@@ -415,7 +419,10 @@ def processMessage(message):
 		if "pause" in body and isMessage and str(message.author).lower() in wiki.admins:
 			response = processMessagePauseGame(message.body)
 		if "abandon" in body and isMessage and str(message.author).lower() in wiki.admins:
+			log.debug('Going to abandon a game')
 			response = processMessageAbandonGame(message.body)
+		if "refresh" in body and isMessage and str(message.author).lower() in wiki.admins:
+			pass
 	message.mark_read()
 	if response is not None:
 		if success is not None and not success and dataTable is not None and utils.extractTableFromMessage(response) is None:

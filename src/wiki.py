@@ -31,6 +31,7 @@ def loadPages():
 		sheets.get_all_dicts()
 		plays = sheets.play_dict
 		times = sheets.time_dict
+		loadAdmins()
 		log.debug("Done loading pages in: %d", int(time.perf_counter() - startTime))
 
 
@@ -217,10 +218,11 @@ def getTimeByPlay(game):
 
 
 def loadAdmins():
+	global admins
 	adminsPage = reddit.getWikiPage(globals.CONFIG_SUBREDDIT, "admins")
 
 	for line in adminsPage.splitlines():
 		admins.add(line.lower())
 
 	admins.add(globals.OWNER)
-	admins.add('zenverak')
+	log.debug('admins are now {}'.format(admins))

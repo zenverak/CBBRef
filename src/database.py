@@ -48,8 +48,35 @@ def init():
 		DNum INTEGER NOT NULL,
 		Diff INTEGER NOT NULL,
 		Result char(20),
+		Quarter int,
+		Playclock char(6),
 		FOREIGN KEY(GameID) REFERENCES games(ID)
 		)
+	''')
+	c.execute('''
+		CREATE TABLE IF NOT EXISTS stats (
+		ID INTEGER PRIMARY KEY AUTOINCREMENT,
+		GameID INTEGER NOT NULL,
+		Team Char(20),
+		ShotsTaken int,
+		ShotsMade int,
+		ThreesTaken int,
+		ThreesMade int,
+		FreesTaken int,
+		FreesMade int,
+		Turnovers int,
+		Steals int,
+		OffReb int,
+		DefReb int,
+		FoulsCommitted int,
+		TimesFouled int,
+		Top char(5),
+		Proccessed char(1),
+		FOREIGN KEY(GameID) REFERENCES games(ID)
+
+		)
+
+
 	''')
 	dbConn.commit()
 
@@ -59,12 +86,31 @@ def close():
 	dbConn.commit()
 	dbConn.close()
 
-def insertNewPlays(gameid, ocoach, dcoach, ptype, call, onum, dnum, diff, result):
+def insertStats(*stats):
+	c = dbConn.cursor()
+	try:
+		c.execute('''
+	 		INSERT INTO stats
+			(GameID, Team, ThreesTaken, ThreesMade, FreesTaken, FreesMade, Turnovers, Steals, OffReb, DefReb, FoulsCommitted, Top, Proccessed, TimesFouled ,ShotsTaken, ShotsMade,)
+			values(?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?)
+		''',(stats[0], stats[1], stats[2], stats[3], stats[4], stats[5], stats[6], stats[7], stats[8], stats[9], stats[10], stats[11], stats[12], stats[13], stats[14], stats[15]))
+	except sqlite3.IntegreityError:
+		return False
+	dbConn.commit()
+	if c.rowcount == 1:
+		return True
+	else:
+		return False
+
+
+
+
+def insertNewPlays(gameid, ocoach, dcoach, ptype, call, onum, dnum, diff, result, qrt, pclock):
 
 	c = dbConn.cursor()
 	try:
-		c.execute('''insert into plays(GameID ,OffCoach ,DefCoach ,Playtype ,Call ,ONum ,Dnum ,Diff , Result)\
-	values(?,?,?,?,?,?,?,?,?)''',(gameid ,ocoach ,dcoach ,ptype ,call ,onum ,dnum ,diff ,result))
+		c.execute('''insert into plays(GameID ,OffCoach ,DefCoach ,Playtype ,Call ,ONum ,Dnum ,Diff , Result, quarter, playclock)\
+	values(?,?,?,?,?,?,?,?,?,?,?)''',(gameid ,ocoach ,dcoach ,ptype ,call ,onum ,dnum ,diff ,result, qrt, pclock))
 		print ("should be inserted")
 
 	except sqlite3.IntegrityError:
@@ -190,7 +236,7 @@ def endGame(threadId):
 	c = dbConn.cursor()
 	c.execute('''
 		UPDATE games
-		SET Complete = 0
+		SET Complete = 1
 			,Playclock = CURRENT_TIMESTAMP
 		WHERE ThreadID = ?
 	''', (threadId,))

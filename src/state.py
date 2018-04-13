@@ -167,6 +167,7 @@ def updateTime(game, play, result, offenseHomeAway):
 	if game['status']['clock'] <= 0:
 		log.debug("End of half: {}".format(game['status']['half']))
 		actualTimeOffClock = timeOffClock + game['status']['clock']
+		utils.addStat(game, 'posTime', actualTimeOffClock, offenseHomeAway)
 		game['status']['clock'] = 0
 		if not game['status']['free']:
 			timeMessage = endHalf(game)
@@ -178,14 +179,11 @@ def updateTime(game, play, result, offenseHomeAway):
 				database.nullTipNumbers(game['dataID'])
 				game['tip']['homeTip'] = False
 				game['tip']['awayTip'] = False
-				game['home']['timeouts'] = 1
-				game['away']['timeouts'] = 1
 				coaches = [game['home']['coaches'][0], game['away']['coaches'][0]]
 				utils.sendTipNumberMessages(game, coaches)
 	else:
 		actualTimeOffClock = timeOffClock
-
-	utils.addStat(game, 'posTime', actualTimeOffClock, offenseHomeAway)
+		utils.addStat(game, 'posTime', actualTimeOffClock, offenseHomeAway)
 
 	if game['status']['clock'] <= 0 and game['status']['halfType'] == 'end':
 		return "The play took {} seconds, {}".format(actualTimeOffClock, timeMessage)
@@ -231,6 +229,8 @@ def endHalf(game):
 				timeMessage = "that's the end of the game! {} has won!".format(utils.flair(game[victor]))
 				game['status']['halfType'] = 'end'
 				game['waitingAction'] = 'end'
+				database.endGame(game['thread'])
+				utils.createPostGameThread(game)
 
 	return timeMessage
 
@@ -243,10 +243,6 @@ def executePlay(game, play, number, numberMessage):
 	success = True
 	timeMessage = None
 	fouled = False
-
-
-
-
 
 
 	log.debug("starting to execute Play with play being {} and number being {}".format(play, number))
@@ -342,7 +338,7 @@ def executePlay(game, play, number, numberMessage):
 					log.debug("In foul Miss Plays")
 					##get numbers to see how many free thors we will shoot
 					setFouls(game, pointsTriedFor)
-					resultMessage = 'Going to shoot {} free throws.'.format(pointsTriedFor)
+					resultMessage = 'Fouled on a {0}pt shot. The shot is missed.  Going to shoot {0} freethrows.'.format(pointsTriedFor)
 					game['play']['playResult'] = 'fouled'
 				elif playResultName in globals.nonShootingFoul:
 					##This sets possession in the bonus check
@@ -353,6 +349,7 @@ def executePlay(game, play, number, numberMessage):
 					game['play']['playResult'] = 'miss'##No need to change who we are waitingon here
 					if pointsTriedFor == 2:
 						sub2Pt(game, False, False)
+
 					elif pointsTriedFor == 3:
 						sub3Pt(game, False, False)
 					else:

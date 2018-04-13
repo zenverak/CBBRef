@@ -17,7 +17,7 @@ delayHours = 24
 ### Constants ###
 offPlays = ['push', 'average','chew']
 pointResults = ['made 2pt', 'made 3pt', 'made 3pt and foul', 'made 2pt and foul']
-foulPlays = ['made 3pt and foul', 'made 2pt and foul','fouled on 2 pt', 'fouled on 3pt']
+foulPlays = ['made 3pt and foul', 'made 2pt and foul','fouled on 2pt', 'fouled on 3pt']
 foulMissPlays = ['fouled on 2pt', 'fouled on 3pt']
 missPlays = ['missed 2pt', 'missed 3pt']
 conversionPlays = ['freeThrow',]
@@ -30,7 +30,7 @@ intFoul ='ifoul'
 datatag = " [](#datatag"
 singleBonus = 7
 doubleBonus = 10
-halfLength = 5 * 60
+halfLength = 20
 otLength =  4*60
 maxRange = 1000
 

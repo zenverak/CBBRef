@@ -83,7 +83,7 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		log.debug("Coach added to away: {}".format(user))
 
 	log.debug("Game started, posting tip ball comment")
-	message = "The ball is throw in the air! {},  {}, Respond to the DM message \
+	message = "The ball is thrown in the air! {},  {}, Respond to the DM message \
 				I sent you for a TIP number".format(getCoachString(game, 'home'),
 											getCoachString(game, 'away')
 											)
@@ -167,6 +167,95 @@ def get_percent(game, team, stat):
 
 
 
+def renderPostGame(game):
+	bldr = []
+	bldr.append(flair(game['away']))
+	bldr.append(" **")
+	bldr.append(game['away']['name'])
+	bldr.append("** @ ")
+	bldr.append(flair(game['home']))
+	bldr.append(" **")
+	bldr.append(game['home']['name'])
+	bldr.append("**\n\n")
+
+	if game['startTime'] is not None:
+		bldr.append(" **Game Start Time:** ")
+		bldr.append(game['startTime'])
+		bldr.append("\n\n")
+
+	if game['location'] is not None:
+		bldr.append(" **Location:** ")
+		bldr.append(game['location'])
+		bldr.append("\n\n")
+
+	if game['station'] is not None:
+		bldr.append(" **Watch:** ")
+		bldr.append(game['station'])
+		bldr.append("\n\n")
+
+
+	bldr.append("\n\n")
+
+	for team in ['away', 'home']:
+		made = game[team]['2PtMade']+game[team]['3PtMade']
+		att = game[team]['2PtAttempted']+game[team]['3PtAttempted']
+		bldr.append(flair(game[team]))
+		bldr.append("\n\n")
+		bldr.append("Shooting|Shooting %|3pters|3pt %|Free Throws|Free Throw %\n")
+		bldr.append(":-:|:-:|:-:|:-:|:-:|:-:\n")
+		bldr.append("{}/{}|{} %|{}/{}|{} %|{}/{}|{}%\n".format(
+			made,
+			att,
+			get_percent(game, team, 'total'),
+			game[team]['3PtMade'],
+			game[team]['3PtAttempted'],
+			get_percent(game, team, '3'),
+			game[team]['FTMade'],
+			game[team]['FTAttempted'],
+			get_percent(game, team, 'free'),
+
+		))
+		bldr.append("**Turnovers**|**Steals**|**Fouls**|**Time of Possession**|**Offensive Rebounds**|**Defensive Rebounds**\n")
+	#	bldr.append(":-:|:-:|:-:|:-:|:-:|:-:\n")
+		bldr.append("{}|{}|{}|{}|{}|{}\n".format(
+					game[team]['turnovers'],
+					game[team]['steals'],
+					game[team]['fouls'],
+					renderTime(game[team]['posTime']),
+					game[team]['offRebound'],
+					game[team]['defRebound']))
+		bldr.append("\n\n___\n")
+	halfNum = game['status']['half']
+
+	if halfNum > 2:
+		bldr.append("Team|H1|H2|")
+		for i in range(1,halfNum+1-2):
+			bldr.append("OT{}|".format(i))
+		bldr.append('Total\n')
+		bldr.append(":-:|:-:|:-:|")
+		for i in range(1,halfNum+1-2):
+			bldr.append(":-:|")
+		bldr.append(':-:\n')
+	else:
+		bldr.append("Team|H1|H2|Total\n")
+		bldr.append(":-:|:-:|:-:|:-:\n")
+	for team in ['away', 'home']:
+		bldr.append(flair(game[team]))
+		bldr.append('|')
+		bldr.append(str(game['score']['halves'][0][team]))
+		bldr.append('|')
+		bldr.append(str(game['score']['halves'][1][team]))
+		bldr.append('|')
+		if halfNum>2:
+			for i in range(2, halfNum):
+				bldr.append(str(game['score']['halves'][i][team]))
+				bldr.append('|')
+			bldr.append(str(game['score'][team]))
+		else:
+			bldr.append(str(game['score'][team]))
+		bldr.append('\n')
+	return ''.join(bldr)
+
 def renderGame(game):
 	bldr = []
 	bldr.append(flair(game['away']))
@@ -202,9 +291,9 @@ def renderGame(game):
 		bldr.append(flair(game[team]))
 		bldr.append("\n\n")
 		bldr.append("Shooting|Shooting %|3pters|3pt %|Free Throws|Free Throw %\
-											|Turnovers|Fouls|Bonus|Timeouts\n")
+											|Turnovers|Fouls|Bonus\n")
 		bldr.append(":-:|:-:|:-:|:--:|:-:|:-:|:-:|:-:|:-:|:-:\n")
-		bldr.append("{}/{}|{} %|{}/{}|{} %|{}/{}|{} %|{}|{}|{}|{}".format(
+		bldr.append("{}/{}|{} %|{}/{}|{} %|{}/{}|{} %|{}|{}|{}".format(
 			made,
 			att,
 			get_percent(game, team, 'total'),
@@ -216,27 +305,24 @@ def renderGame(game):
 			get_percent(game, team, 'free'),
 			game[team]['turnovers'],
 			game[team]['fouls'],
-			game[team]['bonus'],
-			game[team]['timeouts']))
+			game[team]['bonus']))
 		bldr.append("\n\n___\n")
 
 	bldr.append("Playclock|Half\n")
 	bldr.append(":-:|:-:\n")
-	half = game['status']['half']
-	if half > 2:
-		half = 'OT{}'.format(half-2)
+	halfNum = game['status']['half']
 	bldr.append("{}|{}\n".format(
 		renderTime(game['status']['clock']),
-		game['status']['half']
+		halfNum
 		))
 	bldr.append("\n___\n\n")
-	if game['status']['half'] > 2:
+	if halfNum > 2:
 		bldr.append("Team|H1|H2|")
-		for i in range(1,game['half']+1-2):
+		for i in range(1,halfNum+1-2):
 			bldr.append("OT{}|".format(i))
 		bldr.append('Total\n')
 		bldr.append(":-:|:-:|:-:|")
-		for i in range(1,game['half']+1-2):
+		for i in range(1,halfNum+1-2):
 			bldr.append(":-:|")
 		bldr.append(':-:\n')
 	else:
@@ -249,8 +335,8 @@ def renderGame(game):
 		bldr.append('|')
 		bldr.append(str(game['score']['halves'][1][team]))
 		bldr.append('|')
-		if game['status']['half']>2:
-			for i in range(3, int(game['half'])+1):
+		if halfNum>2:
+			for i in range(2, halfNum):
 				bldr.append(str(game['score']['halves'][i][team]))
 				bldr.append('|')
 			bldr.append(str(game['score'][team]))
@@ -305,6 +391,35 @@ def getGameByUser(user):
 def getGameThreadText(game):
 	threadText = renderGame(game)
 	return embedTableInMessage(threadText, game)
+
+def getPostGameThreadText(game):
+	threadText = renderPostGame(game)
+	return embedTableInMessage(threadText, game)
+
+
+def updateRecords(game):
+	'''
+	Used to update records.
+	'''
+
+
+def _parseRecord(record):
+	pass
+
+
+def updateRecord(game):
+    pass
+
+
+def createPostGameThread(game):
+	gameThread = getPostGameThreadText(game)
+	gameTitle = "Default Stuff M'kay"
+	if game['score']['away'] > game['score']['home']:
+		gameTitle = 'POSTGAME: {} defeats {}'.format(game['away']['name'], game['home']['name'])
+	else:
+		gameTitle = 'POSTGAME: {} defeats {}'.format(game['home']['name'], game['away']['name'])
+
+	reddit.submitSelfPost(globals.SUBREDDIT, gameTitle, gameThread)
 
 
 def updateGameThread(game):
@@ -427,6 +542,8 @@ def getNthWord(number):
 		return "1st"
 	elif number == 2:
 		return "2nd"
+	elif number == 3:
+		return '3rd'
 	else:
 		return "{}th".format(number)
 
@@ -499,7 +616,7 @@ def sendDefensiveNumberMessage(game, mess=None, recpt=None):
 	else:
 		if not game['status']['free']:
 			messageToSend = "{}\n\nReply with a number between **1** and **{}**, inclusive \
-		 	or you can send ifoul for an intentional foul. There is currently {} \
+			or you can send ifoul for an intentional foul. There is currently {} \
 			left in the {} half".format(getCurrentPlayString(game), globals.maxRange, renderTime(game['status']['clock']), getNthWord(game['status']['half']))
 		else:
 			messageToSend = "{}\n\nReply with a number between **1** and **{}**, inclusive".format(getCurrentPlayString(game), globals.maxRange)
@@ -613,10 +730,12 @@ def insertPlayData(game):
 	dcoach = game['play']['dcoach']
 	dnum = game['play']['dnum']
 	onum =  game['play']['onum']
-	ptype = 'test'
+	ptype = game['play']['playType']
 	diff = game['play']['diff']
 	result = game['play']['result']
-	database.insertNewPlays(gameID, ocoach, dcoach, ptype, message, onum, dnum, diff, result)
+	quarter = game['status']['half']
+	pclock = renderTime(game['status']['clock'])
+	database.insertNewPlays(gameID, ocoach, dcoach, ptype, message, onum, dnum, diff, result, quarter, pclock)
 	resetPlayData(game)
 
 
@@ -626,18 +745,40 @@ def getGamePlaysData(game):
 	'''
 	pass
 
+def _setStatsData(game, homeAway):
+	stats = ['name', '3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','OffRebound','defRebound','fouls','posTime']
+	data = [game['dataID']]
+	for stat in stats:
+		data.append(game[homeAway][stat])
+	totShots = game[homeAway]['2PtAttempted'] + game[homeAway]['3PtAttepmted']
+	totMade =  game[homeAway]['2PtMade'] + game[homeAway]['3PtMade']
+	data.append(totShots)
+	data.append(totMade)
+	data.append(game[reverseHomeAway(homeAway)]['fouls'])
+	return data
 
+
+
+
+def insertStatData(game):
+	homeStats = _setStatsData(game, 'home')
+	awayStats = _setStatsData(game, 'away')
+	h_ins = database.insertStats(homeStats)
+	a_ins = database.insertStats(awayStats)
+
+	return h_ins, a_ins
 
 
 
 def resetPlayData(game):
-	game['play']['dnum'] = 0
-	game['play']['onum'] = 0
-	game['play']['diff'] = 0
-	game['play']['playMessage'] = None
+	game['play']['dnum'] = 9999
+	game['play']['onum'] = 9999
+	game['play']['diff'] = 9999
+	game['play']['playMessage'] = ''
 	game['play']['ocoach'] = ''
 	game['play']['dcoach'] = ''
 	game['play']['result'] = ''
+	game['play']['playType'] = ''
 
 def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
