@@ -774,7 +774,7 @@ def setStatsForSheet(game, homeAway):
 	else:
 		win = 0
 	stats = [game[homeAway]['name'],totShots,totMade,totPer,
-			game[homeAway]['3PtAttempted'],game[homeAway]['3PtMade',]
+			game[homeAway]['3PtAttempted'],game[homeAway]['3PtMade'],
 			threePer,game[homeAway]['FTAttempted'], game[homeAway]['FTMade'],
 			foulPer,game[homeAway]['turnovers'], game[homeAway]['steals'],
 			game[homeAway]['offRebound'], game[homeAway]['defRebound'],
