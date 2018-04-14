@@ -229,10 +229,13 @@ def endHalf(game):
 				timeMessage = "that's the end of the game! {} has won!".format(utils.flair(game[victor]))
 				game['status']['halfType'] = 'end'
 				game['waitingAction'] = 'end'
-				database.endGame(game['thread'])
-				for team in ['home','away']:
-					utils.setStats(game, team)
 				utils.createPostGameThread(game)
+				database.endGame(game['thread'])
+				try:
+					for team in ['home','away']:
+						utils.setStats(game, team)
+				except:
+					log.debug('Cannot insert stats for teams with gameid {}'.format(game['dataID']))
 
 	return timeMessage
 
