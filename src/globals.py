@@ -14,6 +14,8 @@ timeouts = 4
 delayHours = 24
 
 
+statSheet = '13llhH_3hmYwmmuyF9X7gCEo-cAK9SIFDqEqSrIZ7tkk'
+
 ### Constants ###
 offPlays = ['push', 'average','chew']
 pointResults = ['made 2pt', 'made 3pt', 'made 3pt and foul', 'made 2pt and foul']

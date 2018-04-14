@@ -78,6 +78,11 @@ def init():
 
 
 	''')
+
+	c.execute('''
+	CREATE TABLE IF NOT EXISTS Week
+	(week char(10))
+	''')
 	dbConn.commit()
 
 
@@ -85,6 +90,18 @@ def init():
 def close():
 	dbConn.commit()
 	dbConn.close()
+
+def getWeek():
+	c = dbConn.cursor()
+	try:
+		c.execute('''
+		select week from weeks
+		''')
+	except sqlite3.IntegrityError:
+		return False
+	result = c.fetchone()
+	return result[0]
+
 
 def insertStats(*stats):
 	c = dbConn.cursor()
@@ -94,7 +111,7 @@ def insertStats(*stats):
 			(GameID, Team, ThreesTaken, ThreesMade, FreesTaken, FreesMade, Turnovers, Steals, OffReb, DefReb, FoulsCommitted, Top, Proccessed, TimesFouled ,ShotsTaken, ShotsMade,)
 			values(?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?)
 		''',(stats[0], stats[1], stats[2], stats[3], stats[4], stats[5], stats[6], stats[7], stats[8], stats[9], stats[10], stats[11], stats[12], stats[13], stats[14], stats[15]))
-	except sqlite3.IntegreityError:
+	except sqlite3.IntegrityError:
 		return False
 	dbConn.commit()
 	if c.rowcount == 1:

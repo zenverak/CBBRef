@@ -1,6 +1,8 @@
 from __future__ import print_function
 import httplib2
 import os
+import globals
+import database
 
 from apiclient import discovery
 from oauth2client import client
@@ -15,13 +17,15 @@ from copy import deepcopy as dc
 
 # If modifying these scopes, delete your previously saved credentials
 # at ~/.credentials/sheets.googleapis.com-python-quickstart.json
-SCOPES = 'https://www.googleapis.com/auth/spreadsheets.readonly'
+SCOPES = 'https://www.googleapis.com/auth/spreadsheets'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'grabbing data from google sheets'
 
 play_dict = {}
 time_dict = {}
 flags = None
+service = None
+
 def get_credentials():
     """Gets valid user credentials from storage.
 
@@ -60,15 +64,8 @@ def return_data(service, ranges):
     return values
 
 
-
-
-def get_values():
-    """Shows basic usage of the Sheets API.
-
-    Creates a Sheets API service object and prints the names and majors of
-    students in a sample spreadsheet:
-    https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
-    """
+def setService():
+    global service
     credentials = get_credentials()
     http = credentials.authorize(httplib2.Http())
     discoveryUrl = ('https://sheets.googleapis.com/$discovery/rest?'
@@ -76,15 +73,18 @@ def get_values():
     service = discovery.build('sheets', 'v4', http=http,
                               discoveryServiceUrl=discoveryUrl)
 
+
+
+
+def get_values():
+
+    global service
+
     category_ranges = ['push','average','chew']
 
     free_throw_headers = ['home', 'away', 'neutral']
 
-
     range_headers = 'A2:Z2'
-
-
-
 
     headers = return_data(service, range_headers)
     push_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(3,12)]
@@ -220,6 +220,73 @@ def get_all_dicts():
     play_dict = setup_play_dict(head, push, ave, chew,free)
     time_dict = get_time_dict(time)
 
+def getLastRow(sheet):
+    pass
+
+def newSheetCheck(sheet,week):
+    sheetData =  service.spreadsheets().get(spreadsheetId=sheet).execute()
+    sheetData = sheetData.get('sheets', '')
+    sheetNames = [i['properties']['title'] for i in sheetData]
+    if week in sheetNames:
+        return True,sheetData
+    else:
+        return False,sheetData
+
+
+
+def createNewStatSheet(sheet, week):
+    templateID = 0 #set this myself
+    copySheet = {'destination_spreadsheet_id':sheet}
+    response = service.spreadsheets().sheets().copyTo(spreadsheetId=sheet,sheetId=templateID, body=copySheet).execute()
+    updateSheetName(sheet, week, response['sheetId'])
+    return response
+
+
+def updateSheetName(sheet,week,sheetID):
+    req = {"requests": [
+                            {
+                          "updateSheetProperties": {
+                              "properties": {"title": week,
+                                             'sheetId':sheetID},
+                              "fields": "title"}}
+                        ]
+        }
+    response = service.spreadsheets().batchUpdate(spreadsheetId=sheet, body=req).execute()
+    
+
+def getSheetIdFromAll(sheetData, week):
+    for data in sheetData:
+        if data['properties']['title'] ==  week:
+            return data['properties']['sheetId']
+    
+
+def setStats(stats):
+    spreadsheetID = globals.statSheet
+    week = 'midnight' #database.getWeek()
+    exist, sheetData = newSheetCheck(spreadsheetID, week)
+    sheetID = None
+    if not exist:
+        print ('Need to create the sheet')
+        response = createNewStatSheet(spreadsheetID, week)
+    rangeData = '{}!A2:Q'.format(week)
+    
+    allData = service.spreadsheets().values().get(spreadsheetId=spreadsheetID, range=rangeData).execute()
+    values = allData.get('values', [])
+    values.append(stats)
+    bodyRange ={
+        "range":rangeData,
+        "values":values
+        }
+    request = service.spreadsheets().values().update(spreadsheetId=spreadsheetID, range=rangeData,valueInputOption='RAW', body=bodyRange).execute()
+    return values
+    
+        
+    
+    
+    
 
 if __name__ == '__main__':
-    get_all_dicts()
+    setService()
+    stats = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q']
+
+    r = setStats(stats)
