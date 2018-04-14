@@ -38,6 +38,7 @@ def get_credentials():
     home_dir = os.path.abspath('src')
     print('home dir is {}'.format(home_dir))
     credential_dir = os.path.join(home_dir, '.credentials')
+
     if not os.path.exists(credential_dir):
         print('making a directory')
         os.makedirs(credential_dir)
@@ -252,24 +253,23 @@ def updateSheetName(sheet,week,sheetID):
                         ]
         }
     response = service.spreadsheets().batchUpdate(spreadsheetId=sheet, body=req).execute()
-    
+
 
 def getSheetIdFromAll(sheetData, week):
     for data in sheetData:
         if data['properties']['title'] ==  week:
             return data['properties']['sheetId']
-    
+
 
 def setStats(stats):
     spreadsheetID = globals.statSheet
-    week = 'midnight' #database.getWeek()
+    week = database.getWeek()
     exist, sheetData = newSheetCheck(spreadsheetID, week)
-    sheetID = None
     if not exist:
         print ('Need to create the sheet')
         response = createNewStatSheet(spreadsheetID, week)
     rangeData = '{}!A2:Q'.format(week)
-    
+
     allData = service.spreadsheets().values().get(spreadsheetId=spreadsheetID, range=rangeData).execute()
     values = allData.get('values', [])
     values.append(stats)
@@ -278,15 +278,16 @@ def setStats(stats):
         "values":values
         }
     request = service.spreadsheets().values().update(spreadsheetId=spreadsheetID, range=rangeData,valueInputOption='RAW', body=bodyRange).execute()
-    return values
-    
-        
-    
-    
-    
+
+
+setService()
+
+
+
+
 
 if __name__ == '__main__':
     setService()
     stats = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q']
 
-    r = setStats(stats)
+    setStats(stats)

@@ -10,6 +10,7 @@ import globals
 import database
 import wiki
 import reddit
+import sheets
 
 log = logging.getLogger("bot")
 
@@ -756,6 +757,32 @@ def _setStatsData(game, homeAway):
 	data.append(totMade)
 	data.append(game[reverseHomeAway(homeAway)]['fouls'])
 	return data
+
+def setStatsForSheet(game, homeAway):
+	#Team	shots taken	shot made	shooting percentage	3pt taken	3pt made
+	#3 shooting per	ftTaken	ftMade	ftPer	turnovers	steals	oreb	def reb
+	#fouls commited	,times fouled	,time of possession
+	log.debug('setting stats for insert into google sheet')
+	totShots = game[homeAway]['2PtAttempted'] + game[homeAway]['3PtAttepmted']
+	totMade =  game[homeAway]['2PtMade'] + game[homeAway]['3PtMade']
+	totPer = percentage(game, homeAway, 2)
+	threePer =  percentage(game, homeAway, 3)
+	foulPer =  percentage(game, homeAway, 'foul')
+	win = None
+	if game['score'][homeAway] > game['score'][reverseHomeAway(homeAway)]:
+		win = 1
+	else:
+		win = 0
+	stats = [game[homeAway]['name'],totShots,totMade,totPer,
+			game[homeAway]['3PtAttempted'],game[homeAway]['3PtMade',]
+			threePer,game[homeAway]['FTAttempted'], game[homeAway]['FTMade'],
+			foulPer,game[homeAway]['turnovers'], game[homeAway]['steals'],
+			game[homeAway]['offRebound'], game[homeAway]['defRebound'],
+			game[homeAway]['fouls'], game[reverseHomeAway(homeAway)]['fouls'],
+			win
+			]
+	sheets.setStats(stats)
+
 
 
 

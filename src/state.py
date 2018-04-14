@@ -230,6 +230,8 @@ def endHalf(game):
 				game['status']['halfType'] = 'end'
 				game['waitingAction'] = 'end'
 				database.endGame(game['thread'])
+				for team in ['home','away']:
+					utils.setStats(game, team)
 				utils.createPostGameThread(game)
 
 	return timeMessage
