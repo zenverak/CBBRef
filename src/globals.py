@@ -12,6 +12,7 @@ SUBREDDIT_LINK = "https://www.reddit.com/r/{}/comments/".format(SUBREDDIT)
 ACCOUNT_NAME = "default"
 timeouts = 4
 delayHours = 24
+ifoulTime = 3
 
 
 statSheet = '13llhH_3hmYwmmuyF9X7gCEo-cAK9SIFDqEqSrIZ7tkk'

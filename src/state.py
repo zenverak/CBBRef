@@ -144,19 +144,12 @@ def updateTime(game, play, result, offenseHomeAway):
 		return ''
 	elif result == 'FREEDONE':
 		timeOffClock = 0
+	elif play == 'ifoul':
+		timeOffClock = globals.ifoulTime
 	else:
 		timeOffClock = getTimeByPlay(game, play)
 	log.debug("time off the clock was {}".format(timeOffClock))
 
-	if result not in ["gain", "kneel"]:
-		if game['status']['requestedTimeout'] == 'requested':
-			log.debug("Using offensive timeout")
-			game['status']['requestedTimeout'] = 'used'
-			game[offenseHomeAway]['timeouts'] -= 1
-
-	if game['status']['requestedTimeout'] == 'used':
-		log.debug('Taking no time off clock bcuz timeout')
-		timeOffClock = 0
 
 
 	log.debug("Time off clock: {} : {}".format(game['status']['clock'], timeOffClock))
@@ -231,11 +224,13 @@ def endHalf(game):
 				game['waitingAction'] = 'end'
 				utils.createPostGameThread(game)
 				database.endGame(game['thread'])
+
 				try:
 					for team in ['home','away']:
-						utils.setStats(game, team)
+						utils.setStatsForSheet(game, team)
 				except:
 					log.debug('Cannot insert stats for teams with gameid {}'.format(game['dataID']))
+				hins, ains = utils.insertStatData(game)
 
 	return timeMessage
 
@@ -396,7 +391,8 @@ def executePlay(game, play, number, numberMessage):
 		if game['status']['ifoul']:
 			game['status']['ifoul'] = False
 			diffMessage = None
-			timeMessage = 'No time off due to intentional foul'
+			result = None
+			timeMessage = updateTime(game, play, result, startingPossessionHomeAway)
 		if timeMessage is None:
 			timeMessage = updateTime(game, play, result, startingPossessionHomeAway)
 

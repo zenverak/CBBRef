@@ -65,12 +65,14 @@ def init():
 		FreesTaken int,
 		FreesMade int,
 		Turnovers int,
+		TurnoversForced int,
 		Steals int,
 		OffReb int,
 		DefReb int,
 		FoulsCommitted int,
 		TimesFouled int,
 		Top char(5),
+		win int,
 		Proccessed char(1),
 		FOREIGN KEY(GameID) REFERENCES games(ID)
 
@@ -103,14 +105,14 @@ def getWeek():
 	return result[0]
 
 
-def insertStats(*stats):
+def insertStats(stats):
 	c = dbConn.cursor()
 	try:
 		c.execute('''
 	 		INSERT INTO stats
-			(GameID, Team, ThreesTaken, ThreesMade, FreesTaken, FreesMade, Turnovers, Steals, OffReb, DefReb, FoulsCommitted, Top, Proccessed, TimesFouled ,ShotsTaken, ShotsMade,)
-			values(?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?)
-		''',(stats[0], stats[1], stats[2], stats[3], stats[4], stats[5], stats[6], stats[7], stats[8], stats[9], stats[10], stats[11], stats[12], stats[13], stats[14], stats[15]))
+			(GameID, Team, ThreesTaken, ThreesMade, FreesTaken, FreesMade, Turnovers, Steals, OffReb, DefReb, FoulsCommitted, Top, Proccessed, TimesFouled ,ShotsTaken, ShotsMade,TurnoversForced, win)
+			values(?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?)
+		''',(stats[0], stats[1], stats[2], stats[3], stats[4], stats[5], stats[6], stats[7], stats[8], stats[9], stats[10], stats[11], stats[12], stats[13], stats[14], stats[15], stat[16], stat[17]))
 	except sqlite3.IntegrityError:
 		return False
 	dbConn.commit()

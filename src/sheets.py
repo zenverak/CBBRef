@@ -263,12 +263,12 @@ def getSheetIdFromAll(sheetData, week):
 
 def setStats(stats):
     spreadsheetID = globals.statSheet
-    week = database.getWeek()
+    week= 'midnight' #database.getWeek()
     exist, sheetData = newSheetCheck(spreadsheetID, week)
     if not exist:
         print ('Need to create the sheet')
         response = createNewStatSheet(spreadsheetID, week)
-    rangeData = '{}!A2:Q'.format(week)
+    rangeData = '{}!A2:S'.format(week)
 
     allData = service.spreadsheets().values().get(spreadsheetId=spreadsheetID, range=rangeData).execute()
     values = allData.get('values', [])
@@ -288,6 +288,6 @@ setService()
 
 if __name__ == '__main__':
     setService()
-    stats = ['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q']
+    stats = ['Akron', 1, 1, 100.0, 1, 1, 100.0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,20, 1]
 
     setStats(stats)

@@ -151,15 +151,7 @@ def processMessageDefenseNumber(game, message, author):
 		log.debug('saving defesive number as 0 due to an intentional foul')
 		database.saveDefensiveNumber(game['dataID'],0)
 
-	timeoutMessage = None
-	if message.find("timeout") > -1:
-		timeoutMessage = "Defense cannot call timeouts in basketball."
-		# log.debug("defense called a timeout.")
-		# if game['status']['timeouts'][utils.reverseHomeAway(game['status']['possession'])] > 0:
-		# 	game['status']['requestedTimeout'][utils.reverseHomeAway(game['status']['possession'])] = 'requested'
-		# 	timeoutMessage = "Timeout requested successfully"
-		# else:
-		# 	timeoutMessage = "You requested a timeout, but you don't have any left"
+
 	log.debug("offense is currently {}".format(game['play']['offensiveNumber']))
 
 	log.debug("we were waiting on {}".format(game['waitingOn']))
@@ -194,8 +186,6 @@ def processMessageDefenseNumber(game, message, author):
 		result = ["I've got {} as your number.".format(number)]
 	else:
 		result = ["You called an intentional foul"]
-	if timeoutMessage is not None:
-		result.append(timeoutMessage)
 	return True, '\n\n'.join(result)
 
 
@@ -335,6 +325,12 @@ def processMessageKickGame(body):
 	else:
 		log.debug("Couldn't kick game")
 		return "Couldn't kick game {}".format(str(numbers[0]))
+
+def processMessageSetStats(body):
+	numbers = re.findall('(\d+)', body)
+	if len(numbers) < 1:
+		return "Couldn't find a game id in message"
+	pass
 
 def processMessage(message):
 	## Determine if comment or dm

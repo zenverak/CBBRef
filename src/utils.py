@@ -416,9 +416,9 @@ def createPostGameThread(game):
 	gameThread = getPostGameThreadText(game)
 	gameTitle = "Default Stuff M'kay"
 	if game['score']['away'] > game['score']['home']:
-		gameTitle = 'POSTGAME: {} defeats {}'.format(game['away']['name'], game['home']['name'])
+		gameTitle = 'POSTGAME: {} defeats {} , {} to {}'.format(game['away']['name'], game['home']['name'], game['score']['away'], game['score']['home'])
 	else:
-		gameTitle = 'POSTGAME: {} defeats {}'.format(game['home']['name'], game['away']['name'])
+		gameTitle = 'POSTGAME: {} defeats {} , {} to {}'.format(game['home']['name'], game['away']['name'], game['score']['home'], game['score']['away'])
 
 	reddit.submitSelfPost(globals.SUBREDDIT, gameTitle, gameThread)
 
@@ -739,6 +739,11 @@ def insertPlayData(game):
 	database.insertNewPlays(gameID, ocoach, dcoach, ptype, message, onum, dnum, diff, result, quarter, pclock)
 	resetPlayData(game)
 
+def getWinner(game):
+	if game['score']['home'] > game['score']['away']:
+		return 'home'
+	else:
+		return 'away'
 
 def getGamePlaysData(game):
 	'''
@@ -756,6 +761,13 @@ def _setStatsData(game, homeAway):
 	data.append(totShots)
 	data.append(totMade)
 	data.append(game[reverseHomeAway(homeAway)]['fouls'])
+	winner = getWinner(game)
+	if winner == HomeAway:
+		win = 1
+	else:
+		win = 0
+	data.append(win)
+	log.debug('data is {}'.format(stats))
 	return data
 
 def setStatsForSheet(game, homeAway):
@@ -763,24 +775,28 @@ def setStatsForSheet(game, homeAway):
 	#3 shooting per	ftTaken	ftMade	ftPer	turnovers	steals	oreb	def reb
 	#fouls commited	,times fouled	,time of possession
 	log.debug('setting stats for insert into google sheet')
-	totShots = game[homeAway]['2PtAttempted'] + game[homeAway]['3PtAttepmted']
+	totShots = game[homeAway]['2PtAttempted'] + game[homeAway]['3PtAttempted']
 	totMade =  game[homeAway]['2PtMade'] + game[homeAway]['3PtMade']
-	totPer = percentage(game, homeAway, 2)
-	threePer =  percentage(game, homeAway, 3)
-	foulPer =  percentage(game, homeAway, 'foul')
+	totPer = get_percent(game, homeAway, '2')
+	threePer =  get_percent(game, homeAway, '3')
+	foulPer =  get_percent(game, homeAway, 'free')
+	log.debug('got percentages, now getting winer')
 	win = None
 	if game['score'][homeAway] > game['score'][reverseHomeAway(homeAway)]:
 		win = 1
 	else:
 		win = 0
+	log.debug('Setting stats list')
 	stats = [game[homeAway]['name'],totShots,totMade,totPer,
 			game[homeAway]['3PtAttempted'],game[homeAway]['3PtMade'],
 			threePer,game[homeAway]['FTAttempted'], game[homeAway]['FTMade'],
-			foulPer,game[homeAway]['turnovers'], game[homeAway]['steals'],
+			foulPer,game[homeAway]['turnovers'], game[reverseHomeAway(homeAway)]['turnovers'],
+			game[homeAway]['steals'],
 			game[homeAway]['offRebound'], game[homeAway]['defRebound'],
 			game[homeAway]['fouls'], game[reverseHomeAway(homeAway)]['fouls'],
-			win
+			game[homeAway]['posTime'],win
 			]
+	log.debug('setting stat to {}'.format(stats))
 	sheets.setStats(stats)
 
 
