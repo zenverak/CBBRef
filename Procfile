@@ -1,1 +1,1 @@
-cbbbot: python /src/main.py fakecbbref
+cbbbot: python src/main.py fakecbbref
