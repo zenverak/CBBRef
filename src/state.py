@@ -584,7 +584,7 @@ def setWaitingOn(game):
 		game['waitingOn'] = other
 		switchDefOff(game)
 		game['status']['fouledOnly'] =  False
-	elif game['play']['play'] == 'offrebound':
+	elif game['play']['playResult'] == 'offrebound':
 		log.debug('offensive rebound and changing stuff')
 		switchDefOff(game)
 		game['waitingOn'] = other
