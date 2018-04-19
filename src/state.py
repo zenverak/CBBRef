@@ -356,7 +356,7 @@ def executePlay(game, play, number, numberMessage):
 						return False, "Could not detect a number like we think it should. We must pay with our "
 					resultMessage = "Missed a {} point shot.".format(pointsTriedFor)
 				elif playResultName in globals.offRebounds:
-					game['play']['playResult'] = 'off rebound'
+					game['play']['playResult'] = 'offrebound'
 					shotType = utils.coinToss()
 
 
@@ -403,7 +403,7 @@ def executePlay(game, play, number, numberMessage):
 	log.debug("We will be waiting on {} for next number".format(game['waitingOn']))
 	log.debug("messages: resultMessage: {}, timeMessage:{}, diffMessage:{}".format(resultMessage, timeMessage, diffMessage))
 	##determine here if we need to change possession
-	changePossession(game)
+	ession(game)
 	game['play']['playResult'] = ''
 
 	return success, '\n\n'.join(messages)
@@ -578,11 +578,16 @@ def setWaitingOn(game):
 	log.debug("shooting free throws is {}".format(game['status']['free']))
 
 	if (game['status']['free'] or game['status']['fouledOnly']) and game['play']['offensiveNumber']:
+		log.debug('shooting a free throw or only fouled, possession should change the same')
 		##just sent an offensive play and is now shooting a free throw or
 		##fouled and possession stays the same.
 		game['waitingOn'] = other
 		switchDefOff(game)
 		game['status']['fouledOnly'] =  False
+	elif game['play']['play'] == 'offrebound':
+		log.debug('offensive rebound and changing stuff')
+		switchDefOff(game)
+		game['waitingOn'] = other
 	elif game['status']['free'] and game['play']['defensiveNumber']:
 		##offensive player was fouled and the defending team just
 		##sent their number in
