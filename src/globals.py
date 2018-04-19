@@ -2,8 +2,8 @@ from enum import Enum
 
 ### Config ###
 LOG_FOLDER_NAME = "logs"
-SUBREDDIT = "testFakeCBB"
-CONFIG_SUBREDDIT = "testFakeCBB"
+SUBREDDIT = "fakecbb"
+CONFIG_SUBREDDIT = "FakeCBB"
 USER_AGENT = "FakeCBBRef (by /u/Watchful1 and /u/Zenverak)"
 OWNER = "zenverak"
 LOOP_TIME = 2*60
@@ -33,7 +33,7 @@ intFoul ='ifoul'
 datatag = " [](#datatag"
 singleBonus = 7
 doubleBonus = 10
-halfLength = 20
+halfLength = 10*60
 otLength =  4*60
 maxRange = 1000
 
