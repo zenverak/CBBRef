@@ -403,7 +403,7 @@ def executePlay(game, play, number, numberMessage):
 	log.debug("We will be waiting on {} for next number".format(game['waitingOn']))
 	log.debug("messages: resultMessage: {}, timeMessage:{}, diffMessage:{}".format(resultMessage, timeMessage, diffMessage))
 	##determine here if we need to change possession
-	ession(game)
+	changePossession(game)
 	game['play']['playResult'] = ''
 
 	return success, '\n\n'.join(messages)
