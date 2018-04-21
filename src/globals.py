@@ -16,6 +16,9 @@ ifoulTime = 3
 
 
 statSheet = '13llhH_3hmYwmmuyF9X7gCEo-cAK9SIFDqEqSrIZ7tkk'
+rangeSheetProd = '1xJOn_j64vTIispeuf59OD_8-i5AjYZFt36YKm1_XzmY'
+rangeSheetDev = '1ud125PTc4dwuWfkTe3w-cbKvHPLbsOt7T5Q_DD-AFfE'
+week = 'sheet1'
 
 ### Constants ###
 offPlays = ['push', 'average','chew']
@@ -27,7 +30,7 @@ conversionPlays = ['freeThrow',]
 nonShootingFoul = ['Foul', 'foul', 'ifoul','nonshooting foul']
 offRebounds = ['offensive rebound']
 turnovers = ['steal', 'turnover']
-switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal','stealdunk','steal3pt']
+switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal']
 stealDunk = 'stealdunk'
 steal3Pt = 'steal3pt'
 intFoul ='ifoul'

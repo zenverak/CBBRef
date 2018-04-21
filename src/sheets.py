@@ -58,7 +58,7 @@ def get_credentials():
 
 
 def return_data(service, ranges):
-    spreadsheetId = '1xJOn_j64vTIispeuf59OD_8-i5AjYZFt36YKm1_XzmY'
+    spreadsheetId = globals.rangeSheetDev
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheetId, range=ranges).execute()
     values = result.get('values', [])
@@ -85,12 +85,12 @@ def get_values():
 
     free_throw_headers = ['home', 'away', 'neutral']
 
-    range_headers = 'A2:Z2'
+    range_headers = 'A2:AF2'
 
     headers = return_data(service, range_headers)
-    push_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(3,12)]
-    average_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(15,24)]
-    chew_ranges_ranges = ['A{0}:Z{0}'.format(i) for i in range(27,36)]
+    push_ranges_ranges = ['A{0}:AF{0}'.format(i) for i in range(3,12)]
+    average_ranges_ranges = ['A{0}:AF{0}'.format(i) for i in range(15,24)]
+    chew_ranges_ranges = ['A{0}:AF{0}'.format(i) for i in range(27,36)]
 
     free_throw_ranges = 'A39:C39'
 

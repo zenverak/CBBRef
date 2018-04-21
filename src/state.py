@@ -160,7 +160,6 @@ def updateTime(game, play, result, offenseHomeAway):
 	if game['status']['clock'] <= 0:
 		log.debug("End of half: {}".format(game['status']['half']))
 		actualTimeOffClock = timeOffClock + game['status']['clock']
-		utils.addStat(game, 'posTime', actualTimeOffClock, offenseHomeAway)
 		game['status']['clock'] = 0
 		if not game['status']['free']:
 			timeMessage = endHalf(game)
@@ -176,6 +175,9 @@ def updateTime(game, play, result, offenseHomeAway):
 				utils.sendTipNumberMessages(game, coaches)
 	else:
 		actualTimeOffClock = timeOffClock
+	if play.lower() in (globals.steal3Pt, globals.stealDunk):
+		utils.addStat(game, 'posTime', actualTimeOffClock, utils.reverseHomeAway(offenseHomeAway))
+	else:
 		utils.addStat(game, 'posTime', actualTimeOffClock, offenseHomeAway)
 
 	if game['status']['clock'] <= 0 and game['status']['halfType'] == 'end':
@@ -384,14 +386,18 @@ def executePlay(game, play, number, numberMessage):
 					resultMessage = 'The ball was stolen and dunked for two points'
 					setTurnovers(game, 'steal')
 					game['status']['possession'] = utils.reverseHomeAway(startingPossessionHomeAway)
-					game['waitingOn'] = startingPossessionHomeAway
-					sub2PT(game, True, False)
+					log.debug('{} had the ball stolen and {} is about to score'.format(startingPossessionHomeAway, utils.reverseHomeAway(startingPossessionHomeAway)))
+					sub2Pt(game, True, False)
+					game['play']['playResult'] = 'made'
+					game['waitingOn'] = utils.reverseHomeAway(startingPossessionHomeAway)
 				elif playResultName == globals.steal3Pt:
 					resultMessage = 'The ball was stolen and shot for a 3 PT'
 					setTurnovers(game, 'steal')
 					game['status']['possession'] = utils.reverseHomeAway(startingPossessionHomeAway)
-					game['waitingOn'] = startingPossessionHomeAway
-					sub3PT(game, True, False)
+					log.debug('{} had the ball stolen and {} is about to score'.format(startingPossessionHomeAway, utils.reverseHomeAway(startingPossessionHomeAway)))
+					sub3Pt(game, True, False)
+					game['play']['playResult'] = 'made'
+					game['waitingOn'] = utils.reverseHomeAway(startingPossessionHomeAway)
 
 				database.clearDefensiveNumber(game['dataID'])
 		else:
@@ -559,7 +565,7 @@ def setBonusFouls(game, team, otherTeam):
 def changePossession(game):
 	log.debug('determing if we need to change possesion.')
 	log.debug('the play result is {}'.format(game['play']['playResult']))
-	isIn =  game['play']['playResult'] in globals.switchPossessions
+	isIn =  game['play']['playResult'].lower() in globals.switchPossessions
 	log.debug('is this a switch posession? Well the result is {} as long as we did not finish shooting a technical free throw'.format(isIn))
 	if game['status']['techFoul'] and not game['status']['free']:
 		log.debug('Should be not switching possession due to still shooting a technical free throw.')
