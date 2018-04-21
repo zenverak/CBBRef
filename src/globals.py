@@ -28,7 +28,7 @@ nonShootingFoul = ['Foul', 'foul', 'ifoul','nonshooting foul']
 offRebounds = ['offensive rebound']
 turnovers = ['steal', 'turnover']
 switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal','stealdunk','steal3pt']
-stealDunk = 'stealDunk'
+stealDunk = 'stealdunk'
 steal3Pt = 'steal3pt'
 intFoul ='ifoul'
 
