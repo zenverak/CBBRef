@@ -19,7 +19,7 @@ def getLinkToThread(threadID):
 	return globals.SUBREDDIT_LINK + threadID
 
 
-def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None, homeRecord=None, awayRecord=None):
+def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None, homeRecord=None, awayRecord=None, neutral=False):
 	log.debug("Creating new game between /u/{} and /u/{}".format(homeCoach, awayCoach))
 
 	coachNum, result = verifyCoaches([homeCoach, awayCoach])
@@ -60,6 +60,7 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		homeTeam['record'] = homeRecord
 	if awayRecord is not None:
 		awayTeam['record'] = awayRecord
+	game['neutral'] = neutral
 
 	gameThread = getGameThreadText(game)
 	gameTitle = "[GAME THREAD] {}{} @ {}{}".format(
@@ -148,6 +149,7 @@ def flair(team):
 def renderTime(time):
 	return "{}:{}".format(str(math.trunc(time / 60)), str(time % 60).zfill(2))
 
+
 def get_percent(game, team, stat):
 	'''
 	Used to set percentage. This prevents division by zero cases for beginning
@@ -165,7 +167,6 @@ def get_percent(game, team, stat):
 		if game[team]['3PtAttempted'] == 0 and game[team]['2PtAttempted']==0:
 			return 0
 		return round(100 * (game[team]['3PtMade']+game[team]['2PtMade'])/(1.0 *(game[team]['3PtAttempted']+game[team]['2PtAttempted'])),2)
-
 
 
 def renderPostGame(game):
@@ -256,6 +257,7 @@ def renderPostGame(game):
 			bldr.append(str(game['score'][team]))
 		bldr.append('\n')
 	return ''.join(bldr)
+
 
 def renderGame(game):
 	bldr = []
@@ -361,8 +363,8 @@ def rngNumber():
 
 
 def getGameByThread(thread):
-	threadText = reddit.getSubmission(thread).selftext
-	return extractTableFromMessage(threadText)
+	threadText = reddit.getSubmission(thread)
+	return extractTableFromMessage(threadText.selftext)
 
 
 def getTipWinner(awayTip,homeTip,botTip):
@@ -412,10 +414,24 @@ def updateRecord(game):
     pass
 
 
+def endGameDelayOfGame(game, threadId):
+	game['status']['forfeit'] =  True
+	database.endGame(threadId)
+	createPostGameThread(game)
+
+
 def createPostGameThread(game):
 	gameThread = getPostGameThreadText(game)
 	gameTitle = "Default Stuff M'kay"
-	if game['score']['away'] > game['score']['home']:
+	if game['status']['forfeit']:
+		badPerson = None
+		if game['home']['playclockPenalties'] == 3:
+			badPerson = 'home'
+		else:
+			badPerson = 'away'
+		gameTitle = 'POSTGAME: {} wins after {} forfeits due to too many \
+		delay of games'.format(game[reverseHomeAway(badPerson)]['name'], game[badPerson]['name'])
+	elif game['score']['away'] > game['score']['home']:
 		gameTitle = 'POSTGAME: {} defeats {} , {} to {}'.format(game['away']['name'], game['home']['name'], game['score']['away'], game['score']['home'])
 	else:
 		gameTitle = 'POSTGAME: {} defeats {} , {} to {}'.format(game['home']['name'], game['away']['name'], game['score']['home'], game['score']['away'])
@@ -455,8 +471,8 @@ def sendGameComment(game, message, dataTable=None):
 	log.debug("Game comment sent, now waiting on: {}".format(game['waitingId']))
 	return commentResult
 
-def sendGameCommentAfterTip(game, message, dataTable=None):
 
+def sendGameCommentAfterTip(game, message, dataTable=None):
 	commentResult = reddit.replySubmission(game['thread'], embedTableInMessage(message, dataTable))
 	log.debug("Tip Game comment sent, now waiting on: {}".format(game['waitingId']))
 	return commentResult
@@ -482,6 +498,7 @@ def tipResults(game, homeaway,number):
 	if game['homeTip'] != '' and game['awayTip'] != '':
 		game['dirty'] =  True
 	return game, 'result time', True
+
 
 def getHomeAwayString(isHome):
 	if isHome:
@@ -549,10 +566,6 @@ def getNthWord(number):
 		return "{}th".format(number)
 
 
-
-
-
-
 def getCurrentPlayString(game):
 	if  game['tip']['tipped'] == False:
 		return "You just won the tip."
@@ -564,6 +577,7 @@ def getCurrentPlayString(game):
 		return getFreeThrowString(game)
 	else:
 		return game['play']['playResult']
+
 
 def getFreeThrowString(game):
 	max = game['status']['freeStatus']
@@ -578,6 +592,7 @@ def getFreeThrowString(game):
 		freeNum = getFreeNumber(numLeft, max)
 		return "{} is shooting free throw {} of {}".format(game['status']['possession'], freeNum, max)
 
+
 def getFreeNumber(num,max):
 	if (num == 3) or (num == 2 and max == 2) or (num == 1 and max == 1):
 		return 1
@@ -587,6 +602,8 @@ def getFreeNumber(num,max):
 		return 3
 	else:
 		return 696969696969696969696969696969696969
+
+
 def getWaitingOnString(game):
 	string = "Error, no action"
 	if game['waitingAction'] == 'tip':
@@ -595,7 +612,6 @@ def getWaitingOnString(game):
 			waiting.append['home']
 		if game['awayTip'] == '':
 			waiting.append['away']
-
 		string = "Waiting on {} for tip numbers".format(''.join(waitingOn))
 	elif game['waitingAction'] == 'defer':
 		string = "Waiting on {} for receive/defer".format(game[game['waitingOn']]['name'])
@@ -604,8 +620,16 @@ def getWaitingOnString(game):
 			string = "Waiting on {} for an offensive play".format(game[game['waitingOn']]['name'])
 		else:
 			string = "Waiting on {} for a defensive number".format(game[game['waitingOn']]['name'])
-
 	return string
+
+
+def sendDelayDefensiveNumberMessage(game):
+	recpt = game['waitingOn']
+	messageToSend = "{}\n\nReply with a number between **1** and **{}**, inclusive".format(getCurrentPlayString(game), globals.maxRange)
+	reddit.sendMessage(game[recpt]['coaches'],"{} vs {}".format(game['away']['name'], game['home']['name']),embedTableInMessage(messageToSend, {'action': 'play'}))
+	messageResult =  reddit.getRecentSentMessage()
+	game['waitingId'] = messageResult.fullname
+	log.debug('Just sent the defensive message to {} after their delay of game'.format(game[recpt]['coaches']))
 
 
 def sendDefensiveNumberMessage(game, mess=None, recpt=None):
@@ -693,13 +717,7 @@ def buildMessageLink(recipient, subject, content):
 	)
 
 
-def addStatRunPass(game, runPass, amount):
-	if runPass == 'run':
-		addStat(game, 'yardsRushing', amount)
-	elif runPass == 'pass':
-		addStat(game, 'yardsPassing', amount)
-	else:
-		log.warning("Error in addStatRunPass, invalid play: {}".format(runPass))
+
 
 
 def addStat(game, stat, amount, offenseHomeAway=None):
@@ -827,8 +845,8 @@ def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
 		  'requestedTimeout': None,'free': False, 'frees': 0, 'freeStatus': None,
 		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'',
-		  'tipped':False, 'ifoul':False, 'fouledOnly':False}
-	freeThrows = {'freeType':None}
+		  'tipped':False, 'ifoul':False, 'fouledOnly':False, 'techFoul': False, 'forfeit': False}
+	freeThrows = {'freeType':None, }
 	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
 	play = {'fouled':False,'defensiveNumber':True, 'offensiveNumber':False, 'playResult':'', 'playDesc':'', 'dnum':0,

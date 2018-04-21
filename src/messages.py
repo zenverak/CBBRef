@@ -60,6 +60,7 @@ def processMessageNewGame(body, author):
 	station = None
 	homeRecord = None
 	awayRecord = None
+	neutral = False
 
 	for match in re.finditer('(?: )(\w+)(?:=")([^"]*)', body):
 		if match.group(1) == "start":
@@ -77,8 +78,10 @@ def processMessageNewGame(body, author):
 		elif match.group(1) == "awayRecord":
 			awayRecord = match.group(2)
 			log.debug("Found away record: {}".format(awayRecord))
+		elif match.group(1) == 'neutral':
+			neutral = True
 
-	return utils.startGame(homeCoach, awayCoach, startTime, location, station, homeRecord, awayRecord)
+	return utils.startGame(homeCoach, awayCoach, startTime, location, station, homeRecord, awayRecord, neutral)
 
 
 def processMessageTip(game, message):
@@ -206,15 +209,6 @@ def processMessageOffensePlay(game, message, author):
 		number, numberMessage = utils.extractPlayNumber(message)
 
 
-
-	timeoutMessageOffense = None
-	if message.find("timeout") > -1:
-		log.debug("offense called a timeout")
-		if game[game['status']['possession']]['timeouts'] > 0:
-			game['status']['requestedTimeout'] = 'requested'
-		else:
-			timeoutMessageOffense = "The offense requested a timeout, but they don't have any left"
-
 	playOptions = ['chew', 'average', 'push', 'regular']
 	if not game['status']['ifoul']:
 		playSelected = utils.findKeywordInMessage(playOptions, message)
@@ -241,18 +235,9 @@ def processMessageOffensePlay(game, message, author):
 
 	success, resultMessage = state.executePlay(game, play, number, numberMessage)
 
-	if game['status']['requestedTimeout'] == 'used':
-		timeoutMessageOffense = "The offense is charged a timeout"
-	elif game['status']['requestedTimeout'] == 'requested' and not game['status']['ifoul']:
-		timeoutMessageOffense = "The offense requested a timeout, but it was not used"
-	elif game['status']['ifoul']:
-		timeoutMessageOffense = "The offense request a timeout but it could \
-		not be taken due to defense's intentional foul"
-	game['status']['requestedTimeout'] = 'none'
+
 
 	result = [resultMessage]
-	if timeoutMessageOffense is not None:
-		result.append(timeoutMessageOffense)
 	if playSelected != 'default' and success:
 		state.setWaitingOn(game)
 		game['dirty'] = True
@@ -297,11 +282,8 @@ def processMessageAbandonGame(body):
 		log.debug("Couldn't find a thread id in message")
 		return "Couldn't find a thread id in message"
 	log.debug("Found thread id: {}".format(threadIds[0]))
-
 	success = database.endGame(threadIds[0])
-
 	if success:
-
 		return "Game {} abandoned".format(threadIds[0])
 	else:
 		return "Make sure that {} was a real game thread".format(threadIds[0])

@@ -479,8 +479,41 @@ def setFouls(game,f_type):
 		game[otherTeam]['fouls'] += 1
 		game['status']['freeStatus'] = f_type
 
+
 def technicalFouls(game):
-	pass
+	log.debug('Going to keep setup Technical Free throw stuff')
+	##set waiting on and possession
+	badPerson = game['waitingOn']
+	offendPerson = utils.reverseHomeAway(game['waitingOn'])
+	## if badPerson is the in possesion then possession flips
+	if badPerson == game['status']['possession']:
+		game['status']['possession'] = offendPerson
+
+	if game['play']['offensiveNumber']:
+		game['play']['defensiveNumber'] =  False
+		game['play']['offensisiveNumber'] = True
+	game[badPerson]['fouls'] += 1
+	##set  free stats
+	game['status']['frees'] = 2
+	game['status']['free'] =  True
+	game['status']['freeType'] = 'TF'
+	game['status']['freeStatus'] = 2
+	game['status']['techFoul'] = True
+	##Set foul types if SB and DB change
+	if  globals.singleBonus <= game[badPerson]['fouls'] < globals.doubleBonus:
+		game[team]['bonus'] = 'SB'
+	elif globals.doubleBonus <= game[badPerson]['fouls']:
+		game[team]['bonus'] = 'DB'
+	currentDel = game[badPerson]['playclockPenalties']
+	leftDel = 3 - currentDel
+	delayMessage = '{0} has commited a delay of game. They have commited {3} so far. {4} more and they will forfeit their game. {1} will now be shooting \
+	two free throws and they will get the ball after. /u/{2} reply to the DM that \
+	I send you.'.format(game[badPerson]['name'],game[offendPerson]['name'], game[badPerson]['coaches'][0], currentDel, leftDel)
+	utils.sendGameComment(game, delayMessage, {'action': 'play'})
+
+	utils.sendDelayDefensiveNumberMessage(game)
+
+
 
 def setBonusFouls(game, team, otherTeam):
 	message = ''
@@ -511,14 +544,14 @@ def setBonusFouls(game, team, otherTeam):
 		return message
 
 
-
-
 def changePossession(game):
 	log.debug('determing if we need to change possesion.')
 	log.debug('the play result is {}'.format(game['play']['playResult']))
 	isIn =  game['play']['playResult'] in globals.switchPossessions
-	log.debug('is this a switch posession? Well the result is {}'.format(isIn))
-	if isIn and not game['status']['free']:
+	log.debug('is this a switch posession? Well the result is {} as long as we did not finish shooting a technical free throw'.format(isIn))
+	if game['status']['techFoul'] and not game['status']['free']:
+		log.debug('Should be not switching possession due to still shooting a technical free throw.')
+	elif isIn and not game['status']['free']:
 		log.debug('We should be switching possession')
 		current = game['status']['possession']
 		game['status']['possession'] = utils.reverseHomeAway(current)
@@ -544,7 +577,7 @@ def setBlock(game,turnover):
 
 def getFreeThrowResult(game,number):
 	freeThrowDict = wiki.getPlay('freeThrows')
-	if game['location'] == 'neutral':
+	if game['neutral']:
 		values = freeThrowDict['neutral']
 	else:
 		team = game['status']['possession']
@@ -556,8 +589,8 @@ def getFreeThrowResult(game,number):
 	else:
 		return False
 
-def switchDefOff(game):
 
+def switchDefOff(game):
 	if game['play']['defensiveNumber']:
 		game['play']['defensiveNumber'] = False
 		game['play']['offensiveNumber'] =  True
@@ -565,6 +598,7 @@ def switchDefOff(game):
 		game['play']['defensiveNumber'] = True
 		game['play']['offensiveNumber'] =  False
 	return game
+
 
 def setWaitingOn(game):
 	log.debug('going to set waitingOn. It is currently set to {}'.format(game['waitingOn']))
@@ -577,7 +611,13 @@ def setWaitingOn(game):
 	log.debug("just fouled is {}".format(game['play']['fouled']))
 	log.debug("shooting free throws is {}".format(game['status']['free']))
 
-	if (game['status']['free'] or game['status']['fouledOnly']) and game['play']['offensiveNumber']:
+	if game['status']['techFoul'] and not game['status']['free']:
+		log.debug('Just finished shooting technical fouls.')
+		switchDefOff(game)
+		game['status']['techFoul'] = False
+		game['waitingOn'] = other
+
+	elif(game['status']['free'] or game['status']['fouledOnly']) and game['play']['offensiveNumber']:
 		log.debug('shooting a free throw or only fouled, possession should change the same')
 		##just sent an offensive play and is now shooting a free throw or
 		##fouled and possession stays the same.

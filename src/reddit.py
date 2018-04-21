@@ -83,6 +83,7 @@ def submitSelfPost(subreddit, title, text):
 
 
 def getSubmission(id):
+	print ("id is {}".format(id))
 	return reddit.submission(id=id)
 
 

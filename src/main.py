@@ -110,8 +110,6 @@ while True:
 					log.warning(traceback.format_exc())
 
 			for threadId in database.getGamesPastPlayclock():
-				if 1 == 1:
-					break
 				log.debug("Game past playclock: {}".format(threadId))
 				game = utils.getGameByThread(threadId)
 				game[game['waitingOn']]['playclockPenalties'] += 1
@@ -122,32 +120,12 @@ while True:
 					game['status']['halfType'] = 'end'
 					game['waitingAction'] = 'end'
 					resultMessage = "They forfeit the game. {} has won!".format(utils.flair(game[utils.reverseHomeAway(game['waitingOn'])]))
+					utils.endGameDelayOfGame(game, threadId)
 
-				elif game['waitingOn'] == game['status']['possession']:
-					log.debug("Waiting on offense, turnover")
-					if utils.isGameOvertime(game):
-						resultMessage = state.overtimeTurnover(game)
-						if game['waitingAction'] != 'end':
-							utils.sendDefensiveNumberMessage(game)
-					else:
-						state.technicalFouls(game)
-						utils.sendDefensiveNumberMessage(game)
-						resultMessage = "Turnover, {} has the ball.".format(utils.flair(game[game['waitingOn']]))
 
 				else:
-					log.debug("Waiting on defense, touchdown")
-					if utils.isGameOvertime(game):
-						state.forceTouchdown(game, game['status']['possession'])
-						resultMessage = state.overtimeTurnover(game)
-						if game['waitingAction'] != 'end':
-							utils.sendDefensiveNumberMessage(game)
-					else:
-						state.forceTouchdown(game, game['status']['possession'])
-						state.setStateTouchback(game, utils.reverseHomeAway(game['status']['possession']))
-						utils.sendDefensiveNumberMessage(game)
-						resultMessage = "Automatic 7 point touchdown, {} has the ball.".format(utils.flair(game[game['waitingOn']]))
+					state.technicalFouls(game)
 
-				utils.sendGameComment(game, "{}\n\n{}".format(penaltyMessage, resultMessage))
 				database.setGamePlayed(game['dataID'])
 				utils.updateGameThread(game)
 
