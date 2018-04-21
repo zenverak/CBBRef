@@ -395,6 +395,7 @@ def getGameThreadText(game):
 	threadText = renderGame(game)
 	return embedTableInMessage(threadText, game)
 
+
 def getPostGameThreadText(game):
 	threadText = renderPostGame(game)
 	return embedTableInMessage(threadText, game)
@@ -419,6 +420,10 @@ def endGameDelayOfGame(game, threadId):
 	database.endGame(threadId)
 	createPostGameThread(game)
 
+def endGameBothDelay(game, threadId):
+	game['status']['endBoth'] = True
+	database.endGame(threadId)
+	createPostGameThread(game)
 
 def createPostGameThread(game):
 	gameThread = getPostGameThreadText(game)
@@ -431,6 +436,8 @@ def createPostGameThread(game):
 			badPerson = 'away'
 		gameTitle = 'POSTGAME: {} wins after {} forfeits due to too many \
 		delay of games'.format(game[reverseHomeAway(badPerson)]['name'], game[badPerson]['name'])
+	elif game['status']['endBoth']:
+		gameTitle = 'POSTGAME: {} and {} both forfeit simultaneously'.format(game['home']['name'], game['away']['name'])
 	elif game['score']['away'] > game['score']['home']:
 		gameTitle = 'POSTGAME: {} defeats {} , {} to {}'.format(game['away']['name'], game['home']['name'], game['score']['away'], game['score']['home'])
 	else:
@@ -663,7 +670,6 @@ def extractPlayNumber(message):
 						but I can't find one in your message. Reply to the original message"
 	if len(numbers) > 1:
 		log.debug("Found more than one number")
-		return -1, "It looks like you puts more than one number in your message"
 
 	number = int(numbers[0])
 	if number < 1 or number > globals.maxRange:
@@ -700,7 +706,7 @@ def findKeywordInMessage(keywords, message):
 		return 'none'
 	elif len(found) > 1:
 		log.debug("Found multiple keywords: {}".format(', '.join(found)))
-		return 'mult'
+		return found[0]
 	else:
 		return found[0]
 
@@ -845,7 +851,8 @@ def newGameObject(home, away):
 	status = {'clock': globals.halfLength, 'half': 1, 'location': -1, 'possession': 'home',
 		  'requestedTimeout': None,'free': False, 'frees': 0, 'freeStatus': None,
 		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'',
-		  'tipped':False, 'ifoul':False, 'fouledOnly':False, 'techFoul': False, 'forfeit': False}
+		  'tipped':False, 'ifoul':False, 'fouledOnly':False, 'techFoul': False, 'forfeit': False,
+		  'endBoth':False}
 	freeThrows = {'freeType':None, }
 	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}

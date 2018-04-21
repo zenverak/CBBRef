@@ -110,12 +110,30 @@ while True:
 					log.warning(traceback.format_exc())
 
 			for threadId in database.getGamesPastPlayclock():
+				techFoul = True
 				log.debug("Game past playclock: {}".format(threadId))
 				game = utils.getGameByThread(threadId)
-				game[game['waitingOn']]['playclockPenalties'] += 1
-				penaltyMessage = "{} has not sent their number in over {} hours, playclock penalty. This is their {} penalty.".format(
+				if not game['tip']['homeTip'] and not game['tip']['awayTip'] and game['waitingAction'] == 'tip':
+					game['away']['playclockPenalties'] += 1
+					game['home']['playclockPenalties'] += 1
+					techFoul = False
+					penaltyMessage = "You two souls both got a DOG at the same time. Please send your tip message."
+				elif not game['tip']['homeTip'] and game['tip']['awayTip'] and game['waitingAction'] == 'tip':
+					game['home']['playclockPenalties'] += 1
+					game['waitingOn'] = 'home'
+					game['status']['possession'] = 'away'
+				elif game['tip']['homeTip'] and not game['tip']['awayTip'] and game['waitingAction'] == 'tip':
+					game['away']['playclockPenalties'] += 1
+					game['waitingOn'] = 'away'
+					game['status']['possession'] = 'home'
+				else:
+					game[game['waitingOn']]['playclockPenalties'] += 1
+					penaltyMessage = "{} has not sent their number in over {} hours, playclock penalty. This is their {} penalty.".format(
 					utils.getCoachString(game, game['waitingOn']),globals.delayHours, utils.getNthWord(game[game['waitingOn']]['playclockPenalties']))
-				if game[game['waitingOn']]['playclockPenalties'] >= 3:
+				if game['home']['playclockPenalties'] == 3 and game['away']['playclockPenalties'] == 3:
+					## This needs to be where we do something if both players hit 3
+					utils.endGameBothDelay(game,threadId)
+				elif game[game['waitingOn']]['playclockPenalties'] >= 3:
 					log.debug("3 penalties, game over")
 					game['status']['halfType'] = 'end'
 					game['waitingAction'] = 'end'
@@ -123,8 +141,11 @@ while True:
 					utils.endGameDelayOfGame(game, threadId)
 
 
-				else:
+				elif techFoul:
 					state.technicalFouls(game)
+				else:
+					utils.sendGameComment(game, penaltyMessage, {'action': 'death'})
+					pass
 
 				database.setGamePlayed(game['dataID'])
 				utils.updateGameThread(game)

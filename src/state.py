@@ -380,7 +380,18 @@ def executePlay(game, play, number, numberMessage):
 					resultMessage = "the shot was BLOCKED"
 					game['play']['playResult'] = 'block'
 					setBlock(game, 'block')
-
+				elif playResultName == globals.stealDunk:
+					resultMessage = 'The ball was stolen and dunked for two points'
+					setTurnovers(game, 'steal')
+					game['status']['possession'] = utils.reverseHomeAway(startingPossessionHomeAway)
+					game['waitingOn'] = startingPossessionHomeAway
+					sub2PT(game, True, False)
+				elif playResultName == globals.steal3Pt:
+					resultMessage = 'The ball was stolen and shot for a 3 PT'
+					setTurnovers(game, 'steal')
+					game['status']['possession'] = utils.reverseHomeAway(startingPossessionHomeAway)
+					game['waitingOn'] = startingPossessionHomeAway
+					sub3PT(game, True, False)
 
 				database.clearDefensiveNumber(game['dataID'])
 		else:
@@ -516,15 +527,16 @@ def technicalFouls(game):
 
 
 def setBonusFouls(game, team, otherTeam):
-	message = ''
+	message = ['Nonshooting foul. ']
 	utils.addStat(game, 'fouls',1, otherTeam)
 	otherFouls =  int(game[otherTeam]['fouls'])
+
 	if  globals.singleBonus <= otherFouls < globals.doubleBonus:
 		game[team]['bonus'] = 'SB'
 		game['status']['free'] = '1and1Start'
 		game['status']['frees'] =  1
 		game['freeThrows']['freeType'] = '1and1'
-		message = 'In the bonus, shooting the one and one. '
+		message = 'Nonshooting foul. In the bonus, shooting the one and one. '
 		#chagne waiting action and stuff
 	elif globals.doubleBonus <= otherFouls:
 		game[team]['bonus'] = 'DB'
@@ -532,9 +544,9 @@ def setBonusFouls(game, team, otherTeam):
 		game['status']['frees'] =  2
 		game['status']['freeType'] = 2
 		game['status']['freeStatus'] = 2
-		message = 'In the double bonus, shooting two.'
+		message = 'Nonshooting foul. In the double bonus, shooting two.'
 	else:
-		message = 'Fouled but not in the bonus. Offense maintains possession. '
+		message = 'Nonshooting foul. Not in the bonus. Offense maintains possession. '
 		game['status']['fouledOnly'] = True
 	if game['status']['ifoul']:
 		foulMessage = ['Intentional Foul by the defense. ']

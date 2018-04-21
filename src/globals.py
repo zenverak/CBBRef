@@ -24,10 +24,12 @@ foulPlays = ['made 3pt and foul', 'made 2pt and foul','fouled on 2pt', 'fouled o
 foulMissPlays = ['fouled on 2pt', 'fouled on 3pt']
 missPlays = ['missed 2pt', 'missed 3pt']
 conversionPlays = ['freeThrow',]
-nonShootingFoul = ['Foul', 'foul', 'ifoul']
+nonShootingFoul = ['Foul', 'foul', 'ifoul','nonshooting foul']
 offRebounds = ['offensive rebound']
 turnovers = ['steal', 'turnover']
-switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal']
+switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal','stealdunk','steal3pt']
+stealDunk = 'stealDunk'
+steal3Pt = 'steal3pt'
 intFoul ='ifoul'
 
 datatag = " [](#datatag"
