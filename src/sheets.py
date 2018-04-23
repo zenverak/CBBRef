@@ -85,16 +85,16 @@ def get_values():
 
     free_throw_headers = ['home', 'away', 'neutral']
 
-    range_headers = 'A2:AF2'
+    range_headers = 'ranges!A2:AF2'
 
     headers = return_data(service, range_headers)
-    push_ranges_ranges = ['A{0}:AF{0}'.format(i) for i in range(3,12)]
-    average_ranges_ranges = ['A{0}:AF{0}'.format(i) for i in range(15,24)]
-    chew_ranges_ranges = ['A{0}:AF{0}'.format(i) for i in range(27,36)]
+    push_ranges_ranges = ['ranges!A{0}:AF{0}'.format(i) for i in range(3,12)]
+    average_ranges_ranges = ['ranges!A{0}:AF{0}'.format(i) for i in range(15,24)]
+    chew_ranges_ranges = ['ranges!A{0}:AF{0}'.format(i) for i in range(27,36)]
 
-    free_throw_ranges = 'A39:C39'
+    free_throw_ranges = 'ranges!A39:C39'
 
-    time_off_ranges = ['A{0}:C{0}'.format(i) for i in range(43,52)]
+    time_off_ranges = ['ranges!A{0}:C{0}'.format(i) for i in range(43,52)]
 
     push_values = [return_data(service, range_) for range_ in push_ranges_ranges]
     average_values = [return_data(service, range_) for range_ in average_ranges_ranges]

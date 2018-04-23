@@ -57,7 +57,10 @@ def init():
 		CREATE TABLE IF NOT EXISTS stats (
 		ID INTEGER PRIMARY KEY AUTOINCREMENT,
 		GameID INTEGER NOT NULL,
-		Team Char(20),
+		Team Char(35),
+		Points int,
+		PointsAgainst int,
+		Mov int,
 		ShotsTaken int,
 		ShotsMade int,
 		ThreesTaken int,
@@ -67,12 +70,24 @@ def init():
 		Turnovers int,
 		TurnoversForced int,
 		Steals int,
+		Blocks int,
 		OffReb int,
 		DefReb int,
 		FoulsCommitted int,
 		TimesFouled int,
 		Top char(5),
-		win int,
+		Win int,
+		OffDiffAve float,
+		DefDiffAve float,
+		TotShotsAgainst int,
+		TotMadeAgainst int,
+		ThreesTakenAgainst int,
+		ThreesMadeAgainst int,
+		FreesTakenAgainst int,
+		FreesMadeAgainst int,
+		StealsAgainst int,
+		BlocksAgainst int,
+		TopAgainst int,
 		Proccessed char(1),
 		FOREIGN KEY(GameID) REFERENCES games(ID)
 
@@ -108,11 +123,15 @@ def getWeek():
 def insertStats(stats):
 	c = dbConn.cursor()
 	try:
-		c.execute('''
-	 		INSERT INTO stats
-			(GameID, Team, ThreesTaken, ThreesMade, FreesTaken, FreesMade, Turnovers, Steals, OffReb, DefReb, FoulsCommitted, Top, Proccessed, TimesFouled ,ShotsTaken, ShotsMade,TurnoversForced, win)
-			values(?,?,?,?,?,?,?,?,?,?,?,?,0,?,?,?,?,?)
-		''',(stats[0], stats[1], stats[2], stats[3], stats[4], stats[5], stats[6], stats[7], stats[8], stats[9], stats[10], stats[11], stats[12], stats[13], stats[14], stats[15], stat[16], stat[17]))
+		c.execute('''INSERT INTO stats(GameID, Team, Points, PointsAgainst, Mov, ShotsTaken, ShotsMade, ThreesTaken, ThreesMade, \
+		FreesTaken, FreesMade, Turnovers, TurnoversForced, Steals, Blocks, OffReb, DefReb, FoulsCommitted,\
+                TimesFouled, Top, Win, OffDiffAve, DefDiffAve, TotShotsAgainst, TotMadeAgainst, ThreesTakenAgainst,\
+                ThreesMadeAgainst, FreesTakenAgainst, FreesMadeAgainst, StealsAgainst, BlocksAgainst, TopAgainst, Proccessed)
+                Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (stats['dataID'], stats['name'], stats['scored'], stats['scoredAgainst'],
+				stats['mov'], stats['totShots'], stats['totMade'], stats['3PtAttempted'], stats['3PtMade'], stats['FTAttempted'], stats['FTMade'], stats['turnovers'],
+				stats['turnoversGained'], stats['steals'], stats['blocks'], stats['offRebound'], stats['defRebound'], stats['fouls'], stats['timesFouled'],
+				stats['posTime'], stats['win'], stats['offDiffAve'], stats['defDiffAve'], stats['totShotsAgainst'], stats['totMadeAgainst'], stats['3PtAttemptedAgainst'],
+				stats['3PtMadeAgainst'], stats['FTAttemptedAgainst'], stats['FTMadeAgainst'], stats['stealsAgainst'], stats['blocksAgainst'], stats['posTimeAgainst'],0) )
 	except sqlite3.IntegrityError:
 		return False
 	dbConn.commit()

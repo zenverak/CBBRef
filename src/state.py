@@ -44,9 +44,7 @@ def setStateOvertime(game, homeAway):
 	if game['status']['overtimePossession'] is None:
 		game['status']['overtimePossession'] = 1
 
-	setStateTouchback(game, homeAway)
-	game['status']['location'] = 75
-	game['waitingOn'] = homeAway
+
 
 
 def score3Points(game, homeAway):
@@ -78,6 +76,10 @@ def getNumberDiffForGame(game, offenseNumber):
 	game['play']['onum'] = offenseNumber
 	game['play']['dnum'] = defenseNumber
 	game['play']['diff'] = difference
+	current = game['status']['possession']
+	other = utils.reverseHomeAway(current)
+	game[current]['offDiffs'].append(difference)
+	game[other]['defDiffs'].append(difference)
 
 	numberMessage = "Offense: {}\n\nDefense: {}\n\nDifference: {}".format(offenseNumber, defenseNumber, difference)
 	log.debug("Offense: {} Defense: {} Result: {}".format(offenseNumber, defenseNumber, difference))
@@ -162,6 +164,10 @@ def updateTime(game, play, result, offenseHomeAway):
 		actualTimeOffClock = timeOffClock + game['status']['clock']
 		game['status']['clock'] = 0
 		if not game['status']['free']:
+			if play.lower() in (globals.steal3Pt, globals.stealDunk):
+				utils.addStat(game, 'posTime', actualTimeOffClock, utils.reverseHomeAway(offenseHomeAway))
+			else:
+				utils.addStat(game, 'posTime', actualTimeOffClock, offenseHomeAway)
 			timeMessage = endHalf(game)
 			if game['status']['halfType'] != 'end' and game['status']['half'] > 2:
 				log.debug('Setting OverTime information')
@@ -175,10 +181,12 @@ def updateTime(game, play, result, offenseHomeAway):
 				utils.sendTipNumberMessages(game, coaches)
 	else:
 		actualTimeOffClock = timeOffClock
-	if play.lower() in (globals.steal3Pt, globals.stealDunk):
-		utils.addStat(game, 'posTime', actualTimeOffClock, utils.reverseHomeAway(offenseHomeAway))
-	else:
-		utils.addStat(game, 'posTime', actualTimeOffClock, offenseHomeAway)
+
+		if play.lower() in (globals.steal3Pt, globals.stealDunk):
+			utils.addStat(game, 'posTime', actualTimeOffClock, utils.reverseHomeAway(offenseHomeAway))
+		else:
+			utils.addStat(game, 'posTime', actualTimeOffClock, offenseHomeAway)
+
 
 	if game['status']['clock'] <= 0 and game['status']['halfType'] == 'end':
 		return "The play took {} seconds, {}".format(actualTimeOffClock, timeMessage)
@@ -196,9 +204,11 @@ def endHalf(game):
 	if game['status']['half'] == 1:
 		timeMessage = "end of the first half"
 		game['status']['clock'] =  globals.halfLength
-		game['status']['posession'] = utils.reverseHomeAway(game['status']['wonTip'])
+		game['status']['possession'] = utils.reverseHomeAway(game['status']['wonTip'])
+		game['waitingOn'] =  game['status']['wonTip']
 		game['status']['waitingAction'] = 'play'
 		game['status']['half'] = 2
+		game['status']['changePosWaitCheck'] = False
 	else:
 		if game['status']['half'] >= 2:
 			if game['score']['home'] == game['score']['away']:
@@ -275,7 +285,7 @@ def executePlay(game, play, number, numberMessage):
 			else:
 				game['play']['result'] = 'Free Missed'
 				log.debug("failed free throw")
-				resultMessage =  "The free throw has cursed you. Suffer."
+				resultMessage =  "You missed the free throw."
 			if game['status']['frees'] == 0:
 				game['status']['free'] = False
 				game['waitingAction'] =  'play'
@@ -405,15 +415,15 @@ def executePlay(game, play, number, numberMessage):
 			success = False
 	messages = [resultMessage]
 	if resultMessage is not None:
-		if game['status']['ifoul']:
-			game['status']['ifoul'] = False
-			diffMessage = None
-			result = None
-			timeMessage = updateTime(game, play, result, startingPossessionHomeAway)
-		if timeMessage is None:
-			timeMessage = updateTime(game, play, result, startingPossessionHomeAway)
-
-		messages.append(timeMessage)
+		if success:
+			if game['status']['ifoul']:
+				game['status']['ifoul'] = False
+				diffMessage = None
+				result = None
+				timeMessage = updateTime(game, play, result, startingPossessionHomeAway)
+			if timeMessage is None:
+				timeMessage = updateTime(game, play, result, startingPossessionHomeAway)
+			messages.append(timeMessage)
 	if diffMessage is not None:
 		messages.append(diffMessage)
 	log.debug("Finishing execution of play")
@@ -421,7 +431,7 @@ def executePlay(game, play, number, numberMessage):
 	log.debug("messages: resultMessage: {}, timeMessage:{}, diffMessage:{}".format(resultMessage, timeMessage, diffMessage))
 	##determine here if we need to change possession
 	changePossession(game)
-	game['play']['playResult'] = ''
+
 
 	return success, '\n\n'.join(messages)
 
@@ -488,12 +498,16 @@ def setFouls(game,f_type):
 	'''
 	team = game['status']['possession']
 	otherTeam = utils.reverseHomeAway(team)
+	game[otherTeam]['fouls'] += 1
+	if  globals.singleBonus <= game[otherTeam]['fouls'] < globals.doubleBonus:
+		game[team]['bonus'] = 'SB'
+	elif globals.doubleBonus <= game[otherTeam]['fouls']:
+		game[team]['bonus'] = 'DB'
 	if f_type == 0:
 		return setBonusFouls(game, team, otherTeam)
 	else:
 		game['status']['frees'] = f_type
 		game['status']['free'] = True
-		game[otherTeam]['fouls'] += 1
 		game['status']['freeStatus'] = f_type
 
 
@@ -532,20 +546,18 @@ def technicalFouls(game):
 
 
 
+
 def setBonusFouls(game, team, otherTeam):
 	message = ['Nonshooting foul. ']
-	utils.addStat(game, 'fouls',1, otherTeam)
 	otherFouls =  int(game[otherTeam]['fouls'])
 
-	if  globals.singleBonus <= otherFouls < globals.doubleBonus:
-		game[team]['bonus'] = 'SB'
+	if  game[team]['bonus'] == 'SB':
 		game['status']['free'] = '1and1Start'
 		game['status']['frees'] =  1
 		game['freeThrows']['freeType'] = '1and1'
 		message = 'Nonshooting foul. In the bonus, shooting the one and one. '
 		#chagne waiting action and stuff
-	elif globals.doubleBonus <= otherFouls:
-		game[team]['bonus'] = 'DB'
+	elif game[team]['bonus'] == 'DB':
 		game['status']['free'] = True
 		game['status']['frees'] =  2
 		game['status']['freeType'] = 2
@@ -569,6 +581,8 @@ def changePossession(game):
 	log.debug('is this a switch posession? Well the result is {} as long as we did not finish shooting a technical free throw'.format(isIn))
 	if game['status']['techFoul'] and not game['status']['free']:
 		log.debug('Should be not switching possession due to still shooting a technical free throw.')
+	elif  not game['status']['changePosWaitCheck']:
+		log.debug('not changing possession because end of half')
 	elif isIn and not game['status']['free']:
 		log.debug('We should be switching possession')
 		current = game['status']['possession']
@@ -628,12 +642,17 @@ def setWaitingOn(game):
 	log.debug("other is {}".format(other))
 	log.debug("just fouled is {}".format(game['play']['fouled']))
 	log.debug("shooting free throws is {}".format(game['status']['free']))
+	log.debug("play result was {}".format(game['play']['playResult']))
 
 	if game['status']['techFoul'] and not game['status']['free']:
 		log.debug('Just finished shooting technical fouls.')
 		switchDefOff(game)
 		game['status']['techFoul'] = False
 		game['waitingOn'] = other
+	elif not game['status']['changePosWaitCheck']:
+		switchDefOff(game)
+		game['status']['changePosWaitCheck'] = True
+		log.debug('Not changing waiting on here because we did it elsewhere')
 
 	elif(game['status']['free'] or game['status']['fouledOnly']) and game['play']['offensiveNumber']:
 		log.debug('shooting a free throw or only fouled, possession should change the same')
@@ -647,15 +666,18 @@ def setWaitingOn(game):
 		switchDefOff(game)
 		game['waitingOn'] = other
 	elif game['status']['free'] and game['play']['defensiveNumber']:
+		log.debug('offensive player was fouled and  defnsive player sent their number')
 		##offensive player was fouled and the defending team just
 		##sent their number in
 		game['waitingOn'] = current
 		switchDefOff(game)
 	elif game['play']['defensiveNumber']:
+		log.debug('switching waitingOn since defesne person sent num+')
 		##someone just sent the defnesive number so we are switching
 		##waiting on to the offensive player
 		switchDefOff(game)
 		game['waitingOn'] = current
 	elif game['play']['offensiveNumber']:
 		switchDefOff(game)
+	game['play']['playResult'] = ''
 	log.debug('we are currently awiting on {}'.format(game['waitingOn']))

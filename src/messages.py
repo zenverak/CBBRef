@@ -240,6 +240,7 @@ def processMessageOffensePlay(game, message, author):
 	result = [resultMessage]
 	if playSelected != 'default' and success:
 		state.setWaitingOn(game)
+
 		game['dirty'] = True
 	if game['waitingAction'] == 'play' and playSelected != 'default' and success:
 		log.debug('going to set the play data up, save it, then remove it')

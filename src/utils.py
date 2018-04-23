@@ -48,6 +48,8 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		team['fouls'] = 0
 		team['steals'] = 0
 		team['blocks'] = 0
+		team['offDiffs'] = []
+		team['defDiffs'] = []
 
 	game = newGameObject(homeTeam, awayTeam)
 	if startTime is not None:
@@ -674,7 +676,7 @@ def extractPlayNumber(message):
 	number = int(numbers[0])
 	if number < 1 or number > globals.maxRange:
 		log.debug("Number out of range: {}".format(number))
-		return -1, "I found {}, but that's not a valid number. Reply to this \
+		return -1, "I found {}, but that's not a valid number. Reply to the top \
 		message with a valid number between **1** and **{}** inclusive".format(number, globals.maxRange)
 
 	return number, None
@@ -775,23 +777,48 @@ def getGamePlaysData(game):
 	'''
 	pass
 
+def _percentStat(team, stat):
+	ave = 0
+	try:
+		ave = sum(team[stat])/(1.0 * len(team[stat]))
+	except:
+		pass
+	return ave
+
 def _setStatsData(game, homeAway):
-	stats = ['name', '3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','OffRebound','defRebound','fouls','posTime']
-	data = [game['dataID']]
+	stats = ['name', '3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','offRebound','defRebound','fouls','posTime','blocks']
+	data = {'dataID': game['dataID']}
 	for stat in stats:
-		data.append(game[homeAway][stat])
-	totShots = game[homeAway]['2PtAttempted'] + game[homeAway]['3PtAttepmted']
+		data[stat] = game[homeAway][stat]
+	totShots = game[homeAway]['2PtAttempted'] + game[homeAway]['3PtAttempted']
 	totMade =  game[homeAway]['2PtMade'] + game[homeAway]['3PtMade']
-	data.append(totShots)
-	data.append(totMade)
-	data.append(game[reverseHomeAway(homeAway)]['fouls'])
+	data['totShots'] = totShots
+	data['totMade'] = totMade
 	winner = getWinner(game)
-	if winner == HomeAway:
+	if winner == homeAway:
 		win = 1
 	else:
 		win = 0
-	data.append(win)
-	log.debug('data is {}'.format(stats))
+	data['win'] = win
+	other = reverseHomeAway(homeAway)
+	offDiffAve = _percentStat(game[homeAway], 'offDiffs')
+	defDiffAve = _percentStat(game[homeAway], 'defDiffs')
+	data['offDiffAve'] = offDiffAve
+	data['defDiffAve'] = defDiffAve
+	data['scored'] = game['score'][homeAway]
+	data['scoredAgainst'] = game['score'][other]
+	data['mov'] = data['scored'] - data ['scoredAgainst']
+	totShotsA = game[other]['2PtAttempted'] + game[other]['3PtAttempted']
+	totMadeA =  game[other]['2PtMade'] + game[other]['3PtMade']
+	data['totShotsAgainst'] = totShotsA
+	data['totMadeAgainst'] = totMadeA
+	data['turnoversGained'] = game[other]['turnovers']
+	data['timesFouled'] = game[other]['fouls']
+	statsAgainst = ['3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','offRebound','defRebound','posTime','blocks']
+	for stat in statsAgainst:
+		data['{}Against'.format(stat)] =  game[other][stat]
+	log.debug('data is {}'.format(data))
+	print (data)
 	return data
 
 def setStatsForSheet(game, homeAway):
@@ -852,7 +879,7 @@ def newGameObject(home, away):
 		  'requestedTimeout': None,'free': False, 'frees': 0, 'freeStatus': None,
 		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'',
 		  'tipped':False, 'ifoul':False, 'fouledOnly':False, 'techFoul': False, 'forfeit': False,
-		  'endBoth':False}
+		  'endBoth':False, 'changePosWaitCheck':True}
 	freeThrows = {'freeType':None, }
 	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
