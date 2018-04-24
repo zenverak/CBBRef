@@ -472,6 +472,12 @@ def sendGameMessage(isHome, game, message, dataTable):
 			   embedTableInMessage(message, dataTable))
 	return reddit.getRecentSentMessage().id
 
+def sendPlayResultMessage(isHome, game, message):
+	reddit.sendMessage(game[('home' if isHome else 'away')]['coaches'],
+			   'Result of Play',
+			   message)
+	return reddit.getRecentSentMessage().id
+
 
 def sendGameComment(game, message, dataTable=None):
 
@@ -650,7 +656,7 @@ def sendDefensiveNumberMessage(game, mess=None, recpt=None):
 	else:
 		if not game['status']['free']:
 			messageToSend = "{}\n\nReply with a number between **1** and **{}**, inclusive \
-			or you can send ifoul for an intentional foul. There is currently {} \
+			or you can send foul for an intentional foul. There is currently {} \
 			left in the {} half".format(getCurrentPlayString(game), globals.maxRange, renderTime(game['status']['clock']), getNthWord(game['status']['half']))
 		else:
 			messageToSend = "{}\n\nReply with a number between **1** and **{}**, inclusive".format(getCurrentPlayString(game), globals.maxRange)

@@ -146,7 +146,7 @@ def updateTime(game, play, result, offenseHomeAway):
 		return ''
 	elif result == 'FREEDONE':
 		timeOffClock = 0
-	elif play == 'ifoul':
+	elif play == 'foul':
 		timeOffClock = globals.ifoulTime
 	else:
 		timeOffClock = getTimeByPlay(game, play)

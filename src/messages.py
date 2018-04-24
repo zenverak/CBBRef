@@ -385,7 +385,9 @@ def processMessage(message):
 					success, response = processMessageDefenseNumber(game, body, str(message.author))
 
 				elif dataTable['action'] == 'play' and not isMessage:
+					pos = game['status']['possession']
 					success, response = processMessageOffensePlay(game, body, str(message.author))
+					utils.sendPlayResultMessage(utils.reverseHomeAway(pos),game, response)
 
 		else:
 			log.debug("Couldn't get a game for /u/{}".format(author))

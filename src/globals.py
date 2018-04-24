@@ -30,10 +30,10 @@ conversionPlays = ['freeThrow',]
 nonShootingFoul = ['Foul', 'foul', 'ifoul','nonshooting foul']
 offRebounds = ['offensive rebound']
 turnovers = ['steal', 'turnover']
-switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal']
+switchPossessions = ['turnover', 'made','freeDone','block','miss', 'steal', 'freedone']
 stealDunk = 'stealdunk'
 steal3Pt = 'steal3pt'
-intFoul ='ifoul'
+intFoul ='foul'
 
 datatag = " [](#datatag"
 singleBonus = 7
