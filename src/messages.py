@@ -176,13 +176,12 @@ def processMessageDefenseNumber(game, message, author):
 			)
 	else:
 		resultMessage = "{} has submitted their number for your free throw. {} you're up\
-		.\n\n{}\n\n{} reply with your free throw number.".format(
+		.\n\n{}\n\n{} reply with a free throw number between **1** and **{}**".format(
 			game[utils.reverseHomeAway(game['waitingOn'])]['name'],
 			game[game['waitingOn']]['name'],
 			utils.getCurrentPlayString(game),
 			utils.getCoachString(game, game['waitingOn']),
-			utils.listSuggestedPlays(game),
-			"https://www.reddit.com/r/TestFakeCBB/wiki/refbot"
+			globals.maxRange
 			)
 	utils.sendGameComment(game, resultMessage, {'action': 'play'})
 	if not game['status']['ifoul']:
@@ -245,7 +244,7 @@ def processMessageOffensePlay(game, message, author):
 	if game['waitingAction'] == 'play' and playSelected != 'default' and success:
 		log.debug('going to set the play data up, save it, then remove it')
 		utils.insertPlayData(game)
-		utils.sendDefensiveNumberMessage(game)
+		game['status']['sendDef'] = True
 	elif game['waitingAction'] == 'overtime':
 		log.debug("Starting overtime, posting coin toss comment")
 		message = "Overtime has started! {}, you're away, call **heads** or **tails** in the air.".format(
@@ -442,7 +441,10 @@ def processMessage(message):
 								"Could not understand you. Please try again or message /u/zenverak if you need help.")
 		if resultMessage is None:
 			log.warning("Could not send message")
-
+	if game is not None:
+		if game['status']['sendDef']:
+			utils.sendDefensiveNumberMessage(game)
+			game['status']['sendDef'] = False
 	if game is not None and game['dirty']:
 		log.debug("Game is dirty, updating thread")
 		utils.updateGameThread(game)

@@ -57,8 +57,11 @@ def get_credentials():
     return credentials
 
 
-def return_data(service, ranges):
-    spreadsheetId = globals.rangeSheetDev
+def return_data(service, ranges, id_=None):
+    if id_ is not None:
+        spreadsheetId = id_
+    else:
+        spreadsheetId = globals.rangeSheetDev
     result = service.spreadsheets().values().get(
         spreadsheetId=spreadsheetId, range=ranges).execute()
     values = result.get('values', [])
@@ -282,12 +285,52 @@ def setStats(stats):
 
 setService()
 
+def createWeeks(numWeeks, sheetID):
+    weeks = ['week{}'.format(i) for i in range(2,23)]
+    for week in weeks:
+        createNewStatSheet(sheetID, week)
 
+def getCoaches(sheetID):
+    ranges = 'A2:F133'
+    coaches = return_data(service, ranges, sheetID)
+    return coaches
+    
+def createTagName(name):
+    return name.strip('.,').lower().replace(" ", "")
 
+def writeCoaches(coaches):
+    f = open('coaches', 'w')
+    for coach in coaches:
+        coachString = []
+        team = coach[5]
+        stripTeam = createTagName(team)
+        offense = coach[3]
+        defense = coach[4]
+        if offense == '':
+            offense = '3 Point'
+        if defense == '':
+            defense = 'Zone'
+        data = [stripTeam, team, offense, defense ]
+        for datum in data:
+            coachString.append('{}|'.format(datum))
+        coachString.append('{}\n'.format(coach[0]))
+        f.write(''.join(coachString))
+    f.close()
+        
+        
+def coaches(sheetID):
+    coaches =  getCoaches(sheetID)
+    writeCoaches(coaches)
 
 
 if __name__ == '__main__':
     setService()
-    stats = ['Akron', 1, 1, 100.0, 1, 1, 100.0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,20, 1]
 
-    setStats(stats)
+    
+
+
+    sheetIDstats = '13llhH_3hmYwmmuyF9X7gCEo-cAK9SIFDqEqSrIZ7tkk'
+    sheetIDcoaches = '1zvyaPXfBdLB809_z6Wkieerap1lK88yOfu9ALphyQ6E'
+ #   createWeeks(22, sheetID)
+    coaches = coaches(sheetIDcoaches)
+    

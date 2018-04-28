@@ -350,7 +350,7 @@ def executePlay(game, play, number, numberMessage):
 					log.debug("In foul Miss Plays")
 					##get numbers to see how many free thors we will shoot
 					setFouls(game, pointsTriedFor)
-					resultMessage = 'Fouled on a {0}pt shot. The shot is missed.  Going to shoot {0} freethrows.'.format(pointsTriedFor)
+					resultMessage = 'Fouled on a {0}pt shot. The shot is missed.  Going to shoot {0} free throws.'.format(pointsTriedFor)
 					game['play']['playResult'] = 'fouled'
 				elif playResultName in globals.nonShootingFoul:
 					##This sets possession in the bonus check

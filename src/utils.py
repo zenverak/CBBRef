@@ -473,7 +473,7 @@ def sendGameMessage(isHome, game, message, dataTable):
 	return reddit.getRecentSentMessage().id
 
 def sendPlayResultMessage(isHome, game, message):
-	reddit.sendMessage(game[('home' if isHome else 'away')]['coaches'],
+	reddit.sendMessage(game[('home' if isHome == 'home' else 'away')]['coaches'],
 			   'Result of Play',
 			   message)
 	return reddit.getRecentSentMessage().id
@@ -885,7 +885,7 @@ def newGameObject(home, away):
 		  'requestedTimeout': None,'free': False, 'frees': 0, 'freeStatus': None,
 		  'halfType': 'normal', 'overtimePossession': None,'scored':False,'wonTip':'',
 		  'tipped':False, 'ifoul':False, 'fouledOnly':False, 'techFoul': False, 'forfeit': False,
-		  'endBoth':False, 'changePosWaitCheck':True}
+		  'endBoth':False, 'changePosWaitCheck':True, 'sendDef':False}
 	freeThrows = {'freeType':None, }
 	tip = {'homeTip':False, 'awayTip':False, 'justTipped':False, 'tipMessage':'','tipped':False}
 	score = {'halves': [{'home': 0, 'away': 0}, {'home': 0, 'away': 0}], 'home': 0, 'away': 0}
