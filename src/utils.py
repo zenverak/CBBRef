@@ -50,6 +50,7 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		team['blocks'] = 0
 		team['offDiffs'] = []
 		team['defDiffs'] = []
+		team['possessions'] = 0
 
 	game = newGameObject(homeTeam, awayTeam)
 	if startTime is not None:
@@ -792,7 +793,7 @@ def _percentStat(team, stat):
 	return ave
 
 def _setStatsData(game, homeAway):
-	stats = ['name', '3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','offRebound','defRebound','fouls','posTime','blocks']
+	stats = ['name', '3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','offRebound','defRebound','fouls','posTime','blocks','possessions']
 	data = {'dataID': game['dataID']}
 	for stat in stats:
 		data[stat] = game[homeAway][stat]
@@ -820,7 +821,7 @@ def _setStatsData(game, homeAway):
 	data['totMadeAgainst'] = totMadeA
 	data['turnoversGained'] = game[other]['turnovers']
 	data['timesFouled'] = game[other]['fouls']
-	statsAgainst = ['3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','offRebound','defRebound','posTime','blocks']
+	statsAgainst = ['3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','offRebound','defRebound','posTime','blocks', 'possessions']
 	for stat in statsAgainst:
 		data['{}Against'.format(stat)] =  game[other][stat]
 	log.debug('data is {}'.format(data))

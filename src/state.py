@@ -304,6 +304,7 @@ def executePlay(game, play, number, numberMessage):
 
 	else:
 		if play in globals.offPlays:
+			utils.addStat(game,'possessions',1,startingPossessionHomeAway)
 			if number == -1:
 				log.debug("Trying to execute a normal play, but didn't have a number")
 				resultMessage = numberMessage
@@ -395,6 +396,7 @@ def executePlay(game, play, number, numberMessage):
 				elif playResultName == globals.stealDunk:
 					resultMessage = 'The ball was stolen and dunked for two points'
 					setTurnovers(game, 'steal')
+					utils.addStat(game, 'possessions',1, utils.reverseHomeAway(startingPossessionHomeAway))
 					game['status']['possession'] = utils.reverseHomeAway(startingPossessionHomeAway)
 					log.debug('{} had the ball stolen and {} is about to score'.format(startingPossessionHomeAway, utils.reverseHomeAway(startingPossessionHomeAway)))
 					sub2Pt(game, True, False)
@@ -403,6 +405,7 @@ def executePlay(game, play, number, numberMessage):
 				elif playResultName == globals.steal3Pt:
 					resultMessage = 'The ball was stolen and shot for a 3 PT'
 					setTurnovers(game, 'steal')
+					utils.addStat(game, 'possessions',1, utils.reverseHomeAway(startingPossessionHomeAway))
 					game['status']['possession'] = utils.reverseHomeAway(startingPossessionHomeAway)
 					log.debug('{} had the ball stolen and {} is about to score'.format(startingPossessionHomeAway, utils.reverseHomeAway(startingPossessionHomeAway)))
 					sub3Pt(game, True, False)
@@ -520,9 +523,9 @@ def technicalFouls(game):
 	if badPerson == game['status']['possession']:
 		game['status']['possession'] = offendPerson
 
-	if game['play']['offensiveNumber']:
-		game['play']['defensiveNumber'] =  False
-		game['play']['offensisiveNumber'] = True
+
+	game['play']['defensiveNumber'] =  True
+	game['play']['offensisiveNumber'] = False
 	game[badPerson]['fouls'] += 1
 	##set  free stats
 	game['status']['frees'] = 2
@@ -655,7 +658,7 @@ def setWaitingOn(game):
 		log.debug('Not changing waiting on here because we did it elsewhere')
 
 	elif(game['status']['free'] or game['status']['fouledOnly']) and game['play']['offensiveNumber']:
-		log.debug('shooting a free throw or only fouled, possession should change the same')
+		log.debug('shooting a free throw or only fouled, possession should stay the same')
 		##just sent an offensive play and is now shooting a free throw or
 		##fouled and possession stays the same.
 		game['waitingOn'] = other

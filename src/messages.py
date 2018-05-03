@@ -78,7 +78,8 @@ def processMessageNewGame(body, author):
 		elif match.group(1) == "awayRecord":
 			awayRecord = match.group(2)
 			log.debug("Found away record: {}".format(awayRecord))
-		elif match.group(1) == 'neutral':
+		elif match.group(1) == "neutral":
+			log.debug("this is a neutral game")
 			neutral = True
 
 	return utils.startGame(homeCoach, awayCoach, startTime, location, station, homeRecord, awayRecord, neutral)
@@ -158,7 +159,14 @@ def processMessageDefenseNumber(game, message, author):
 	log.debug("offense is currently {}".format(game['play']['offensiveNumber']))
 
 	log.debug("we were waiting on {}".format(game['waitingOn']))
-	state.setWaitingOn(game)
+	if game['status']['techFoul']:
+		game['waitingOn'] = game['status']['possession']
+		game['play']['defensiveNumber'] = False
+		game['play']['offensiveNumber'] =  True
+		game['play']['playResult'] = ''
+		log.debug('we are currently awiting on {}'.format(game['waitingOn']))
+	else:
+		state.setWaitingOn(game)
 	log.debug("we are now waiting on {}".format(game['waitingOn']))
 	log.debug("offene is is {}".format(game['play']['offensiveNumber']))
 	game['dirty'] = True

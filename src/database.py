@@ -77,6 +77,7 @@ def init():
 		TimesFouled int,
 		Top char(5),
 		Win int,
+		possessionsFor int,
 		OffDiffAve float,
 		DefDiffAve float,
 		TotShotsAgainst int,
@@ -88,6 +89,7 @@ def init():
 		StealsAgainst int,
 		BlocksAgainst int,
 		TopAgainst int,
+		possessionsAgainst int,
 		Proccessed char(1),
 		FOREIGN KEY(GameID) REFERENCES games(ID)
 
@@ -126,12 +128,13 @@ def insertStats(stats):
 		c.execute('''INSERT INTO stats(GameID, Team, Points, PointsAgainst, Mov, ShotsTaken, ShotsMade, ThreesTaken, ThreesMade, \
 		FreesTaken, FreesMade, Turnovers, TurnoversForced, Steals, Blocks, OffReb, DefReb, FoulsCommitted,\
                 TimesFouled, Top, Win, OffDiffAve, DefDiffAve, TotShotsAgainst, TotMadeAgainst, ThreesTakenAgainst,\
-                ThreesMadeAgainst, FreesTakenAgainst, FreesMadeAgainst, StealsAgainst, BlocksAgainst, TopAgainst, Proccessed)
-                Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (stats['dataID'], stats['name'], stats['scored'], stats['scoredAgainst'],
+                ThreesMadeAgainst, FreesTakenAgainst, FreesMadeAgainst, StealsAgainst, BlocksAgainst, TopAgainst, Proccessed, possessionsFor, possessionsAgainst)
+                Values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''', (stats['dataID'], stats['name'], stats['scored'], stats['scoredAgainst'],
 				stats['mov'], stats['totShots'], stats['totMade'], stats['3PtAttempted'], stats['3PtMade'], stats['FTAttempted'], stats['FTMade'], stats['turnovers'],
 				stats['turnoversGained'], stats['steals'], stats['blocks'], stats['offRebound'], stats['defRebound'], stats['fouls'], stats['timesFouled'],
 				stats['posTime'], stats['win'], stats['offDiffAve'], stats['defDiffAve'], stats['totShotsAgainst'], stats['totMadeAgainst'], stats['3PtAttemptedAgainst'],
-				stats['3PtMadeAgainst'], stats['FTAttemptedAgainst'], stats['FTMadeAgainst'], stats['stealsAgainst'], stats['blocksAgainst'], stats['posTimeAgainst'],0) )
+				stats['3PtMadeAgainst'], stats['FTAttemptedAgainst'], stats['FTMadeAgainst'], stats['stealsAgainst'], stats['blocksAgainst'], stats['posTimeAgainst'],0,
+				stats['possessions'], stats['possessionsAgainst']) )
 	except sqlite3.IntegrityError:
 		return False
 	dbConn.commit()
@@ -140,7 +143,7 @@ def insertStats(stats):
 	else:
 		return False
 
-
+0
 
 
 def insertNewPlays(gameid, ocoach, dcoach, ptype, call, onum, dnum, diff, result, qrt, pclock):

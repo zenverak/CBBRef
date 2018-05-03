@@ -38,7 +38,7 @@ intFoul ='foul'
 datatag = " [](#datatag"
 singleBonus = 7
 doubleBonus = 10
-halfLength = 10*60
+halfLength = 20
 otLength =  4*60
 maxRange = 1000
 
