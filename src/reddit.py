@@ -43,18 +43,21 @@ def sendMessage(recipients, subject, message):
 	success = None
 	for recipient in recipients:
 		log.debug('Inside sendMessage about to send a message to {} with subject of {}'.format(recipient, subject))
-		try:
-			success = reddit.redditor(recipient).message(
-				subject=subject,
-				message=message
-			)
-		except praw.exceptions.APIException:
-			log.warning("User "+recipient+" doesn't exist")
-			success = None
-		except Exception:
-			log.warning("Couldn't sent message to "+recipient)
-			log.warning(traceback.format_exc())
-			success = None
+		sent = False
+		while not sent:
+			try:
+				success = reddit.redditor(recipient).message(
+					subject=subject,
+					message=message
+					)
+				sent = True
+			except praw.exceptions.APIException:
+					log.warning("User "+recipient+" doesn't exist")
+					success = None
+			except Exception:
+					log.warning("Couldn't sent message to "+recipient)
+					log.warning(traceback.format_exc())
+					success = None
 
 	if success:
 		log.debug('Message was sent')
@@ -63,13 +66,17 @@ def sendMessage(recipients, subject, message):
 
 def replySubmission(id, message):
 
-	try:
-		submission = getSubmission(id)
-		resultComment = submission.reply(message)
-		return resultComment
-	except Exception as err:
-		log.warning(traceback.format_exc())
-		return None
+	count = 1
+	sent =  False
+	while not sent:
+
+		try:
+			submission = getSubmission(id)
+			resultComment = submission.reply(message)
+			sent = True
+			return resultComment
+		except Exception as err:
+			log.warning(traceback.format_exc())
 
 
 def getWikiPage(subreddit, pageName):
@@ -101,11 +108,15 @@ def getMessageStream():
 
 
 def replyMessage(message, body):
-	try:
-		return message.reply(body)
-	except Exception as err:
-		log.warning(traceback.format_exc())
-		return None
+        sent = False
+        while not sent:
+                try:
+                        val = message.reply(body)
+                        sent = True
+                        return val
+                except Exception as err:
+                        log.warning(traceback.format_exc())
+
 
 
 def getRecentSentMessage():

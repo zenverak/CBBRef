@@ -61,6 +61,7 @@ def processMessageNewGame(body, author):
 	homeRecord = None
 	awayRecord = None
 	neutral = False
+	stats={}
 
 	for match in re.finditer('(?: )(\w+)(?:=")([^"]*)', body):
 		if match.group(1) == "start":
@@ -81,8 +82,18 @@ def processMessageNewGame(body, author):
 		elif match.group(1) == "neutral":
 			log.debug("this is a neutral game")
 			neutral = True
+		elif match.group(1) == "homeScore":
+			stats['homeScore'] = int(match.group(2))
+		elif match.group(1) == "awayScore":
+			stats['awayScore'] = int(match.group(2))
+		elif match.group(1) == "time":
+			stats['time'] = int(match.group(2))
+		elif match.group(1) == "half":
+			stats['half'] = int(match.group(2))
+		elif match.group(1) == "thread":
+			stats['oldThread'] = match.group(2)
 
-	return utils.startGame(homeCoach, awayCoach, startTime, location, station, homeRecord, awayRecord, neutral)
+	return utils.startGame(homeCoach, awayCoach, startTime, location, station, homeRecord, awayRecord, neutral, stats)
 
 
 def processMessageTip(game, message):
@@ -235,9 +246,9 @@ def processMessageOffensePlay(game, message, author):
 			log.debug("Didn't find any plays")
 			return False, "I couldn't find a play in your message. Please reply to this one with a play and a number."
 	else:
-		play = 'ifoul'
+		play = 'foul'
 		numberMessage = 'intentional foul'
-		playSelected = 'ifoul'
+		playSelected = 'foul'
 	game['play']['playType'] = play
 
 	success, resultMessage = state.executePlay(game, play, number, numberMessage)
@@ -410,7 +421,7 @@ def processMessage(message):
 			log.debug('Going to abandon a game')
 			response = processMessageAbandonGame(message.body)
 		if "refresh" in body and isMessage and str(message.author).lower() in wiki.admins:
-			pass
+			response = utils.processRefresh()
 	message.mark_read()
 	if response is not None:
 		if success is not None and not success and dataTable is not None and utils.extractTableFromMessage(response) is None:

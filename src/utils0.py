@@ -19,7 +19,7 @@ def getLinkToThread(threadID):
 	return globals.SUBREDDIT_LINK + threadID
 
 
-def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None, homeRecord=None, awayRecord=None, neutral=False, stats={}):
+def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None, homeRecord=None, awayRecord=None, neutral=False):
 	log.debug("Creating new game between /u/{} and /u/{}".format(homeCoach, awayCoach))
 
 	coachNum, result = verifyCoaches([homeCoach, awayCoach])
@@ -41,11 +41,10 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 		team['posTime'] = 0
 		team['record'] = None
 		team['playclockPenalties'] = 0
-		team['timeouts'] = globals.timeouts
 		team['bonus'] = 'N'
 		team['offRebound'] = 0
 		team['defRebound'] = 0
-		team['fouls'] = 0
+		team['fouls'] = [0,0]
 		team['steals'] = 0
 		team['blocks'] = 0
 		team['offDiffs'] = []
@@ -78,31 +77,6 @@ def startGame(homeCoach, awayCoach, startTime=None, location=None, station=None,
 
 	gameID = database.createNewGame(threadID)
 	game['dataID'] = gameID
-	if 'oldThread' in stats:
-		oldGame = getGameByThread(stats['oldThread'])
-		for team in ('away','home'):
-			for key in oldGame[team]:
-				if key == 'coaches':
-					pass
-				else:
-					game[team][key] = oldGame[team][key]
-		game['score'] =  oldGame['score']
-		game['status']['half'] = oldGame['status']['half']
-		game['status']['clock'] = oldGame['status']['clock']
-	if 'homeScore' in stats:
-		game['score']['home'] =  stats['homeScore']
-		game['score']['halves'][0]['home'] = stats['homeScore']
-	if 'awayScore' in stats:
-		game['score']['away'] = stats['awayScore']
-		game['score']['halves'][0]['away'] = stats['awayScore']
-		pass
-	if 'half' in stats:
-		game['status']['half'] = stats['half']
-	if 'time' in stats:
-		game['status']['clock'] = stats['time']
-
-
-
 	log.debug("Game database record created: {}".format(gameID))
 
 	for user in game['home']['coaches']:
@@ -335,7 +309,7 @@ def renderGame(game):
 			game[team]['FTAttempted'],
 			get_percent(game, team, 'free'),
 			game[team]['turnovers'],
-			game[team]['fouls'],
+			game[team]['fouls'][game['status']['half']-1],
 			game[team]['bonus']))
 		bldr.append("\n\n___\n")
 
@@ -466,7 +440,7 @@ def createPostGameThread(game):
 		else:
 			badPerson = 'away'
 		gameTitle = 'POSTGAME: {} wins after {} forfeits due to too many \
-		delay of games'.format(game[Away(badPerson)]['name'], game[badPerson]['name'])
+		delay of games'.format(game[reverseHomeAway(badPerson)]['name'], game[badPerson]['name'])
 	elif game['status']['endBoth']:
 		gameTitle = 'POSTGAME: {} and {} both forfeit simultaneously'.format(game['home']['name'], game['away']['name'])
 	elif game['score']['away'] > game['score']['home']:
@@ -825,7 +799,10 @@ def _setStatsData(game, homeAway):
 	stats = ['name', '3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','offRebound','defRebound','fouls','posTime','blocks','possessions']
 	data = {'dataID': game['dataID']}
 	for stat in stats:
-		data[stat] = game[homeAway][stat]
+		if stat == 'fouls':
+			data[stat] =  sum(game[homeAway]['fouls'])
+		else:
+			data[stat] = game[homeAway][stat]
 	totShots = game[homeAway]['2PtAttempted'] + game[homeAway]['3PtAttempted']
 	totMade =  game[homeAway]['2PtMade'] + game[homeAway]['3PtMade']
 	data['totShots'] = totShots
@@ -836,7 +813,7 @@ def _setStatsData(game, homeAway):
 	else:
 		win = 0
 	data['win'] = win
-	other = Away(homeAway)
+	other = reverseHomeAway(homeAway)
 	offDiffAve = _percentStat(game[homeAway], 'offDiffs')
 	defDiffAve = _percentStat(game[homeAway], 'defDiffs')
 	data['offDiffAve'] = offDiffAve
@@ -849,7 +826,7 @@ def _setStatsData(game, homeAway):
 	data['totShotsAgainst'] = totShotsA
 	data['totMadeAgainst'] = totMadeA
 	data['turnoversGained'] = game[other]['turnovers']
-	data['timesFouled'] = game[other]['fouls']
+	data['timesFouled'] = sum(game[other]['fouls'])
 	statsAgainst = ['3PtAttempted', '3PtMade', 'FTAttempted','FTMade','turnovers','steals','offRebound','defRebound','posTime','blocks', 'possessions']
 	for stat in statsAgainst:
 		data['{}Against'.format(stat)] =  game[other][stat]
@@ -869,7 +846,7 @@ def setStatsForSheet(game, homeAway):
 	foulPer =  get_percent(game, homeAway, 'free')
 	log.debug('got percentages, now getting winer')
 	win = None
-	if game['score'][homeAway] > game['score'][Away(homeAway)]:
+	if game['score'][homeAway] > game['score'][reverseHomeAway(homeAway)]:
 		win = 1
 	else:
 		win = 0
@@ -877,10 +854,10 @@ def setStatsForSheet(game, homeAway):
 	stats = [game[homeAway]['name'],totShots,totMade,totPer,
 			game[homeAway]['3PtAttempted'],game[homeAway]['3PtMade'],
 			threePer,game[homeAway]['FTAttempted'], game[homeAway]['FTMade'],
-			foulPer,game[homeAway]['turnovers'], game[Away(homeAway)]['turnovers'],
+			foulPer,game[homeAway]['turnovers'], game[reverseHomeAway(homeAway)]['turnovers'],
 			game[homeAway]['steals'],
 			game[homeAway]['offRebound'], game[homeAway]['defRebound'],
-			game[homeAway]['fouls'], game[Away(homeAway)]['fouls'],
+			game[homeAway]['fouls'], game[reverseHomeAway(homeAway)]['fouls'],
 			game[homeAway]['posTime'],win
 			]
 	log.debug('setting stat to {}'.format(stats))

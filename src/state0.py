@@ -210,6 +210,8 @@ def endHalf(game):
 		game['status']['waitingAction'] = 'play'
 		game['status']['half'] = 2
 		game['status']['changePosWaitCheck'] = False
+		for team in ('home','away'):
+			game[team][bonus] = 'N'
 	else:
 		if game['status']['half'] >= 2:
 			if game['score']['home'] == game['score']['away']:
@@ -510,10 +512,10 @@ def setFouls(game,f_type):
 	'''
 	team = game['status']['possession']
 	otherTeam = utils.reverseHomeAway(team)
-	game[otherTeam]['fouls'] += 1
-	if  globals.singleBonus <= game[otherTeam]['fouls'] < globals.doubleBonus:
+	game[otherTeam]['fouls'][game['status']['half']-1] += 1
+	if  globals.singleBonus <= game[otherTeam]['fouls'][game['status']['half']-1] < globals.doubleBonus:
 		game[team]['bonus'] = 'SB'
-	elif globals.doubleBonus <= game[otherTeam]['fouls']:
+	elif globals.doubleBonus <= game[otherTeam]['fouls'][game['status']['half']-1]:
 		game[team]['bonus'] = 'DB'
 	if f_type == 0:
 		return setBonusFouls(game, team, otherTeam)
@@ -535,19 +537,19 @@ def technicalFouls(game):
 
 	game['play']['defensiveNumber'] =  True
 	game['play']['offensisiveNumber'] = False
-	game[badPerson]['fouls'] += 1
+	game[badPerson]['fouls'][game['status']['half']-1] += 1
 	##set  free stats
 	game['status']['frees'] = 2
+	game['waitingAction'] = 'play'
 	game['status']['free'] =  True
 	game['status']['freeType'] = 'TF'
-	game['waitingAction'] = 'play'
 	game['status']['freeStatus'] = 2
 	game['status']['techFoul'] = True
 	##Set foul types if SB and DB change
-	if  globals.singleBonus <= game[badPerson]['fouls'] < globals.doubleBonus:
-		game[offendPerson]['bonus'] = 'SB'
-	elif globals.doubleBonus <= game[badPerson]['fouls']:
-		game[offendPerson]['bonus'] = 'DB'
+	if  globals.singleBonus <= game[badPerson]['fouls'][game['status']['half']-1] < globals.doubleBonus:
+		game[team]['bonus'] = 'SB'
+	elif globals.doubleBonus <= game[badPerson]['fouls'][game['status']['half']-1]:
+		game[team]['bonus'] = 'DB'
 	currentDel = game[badPerson]['playclockPenalties']
 	leftDel = 3 - currentDel
 	delayMessage = '{0} has commited a delay of game. They have commited {3} so far. {4} more and they will forfeit their game. {1} will now be shooting \
@@ -562,7 +564,7 @@ def technicalFouls(game):
 
 def setBonusFouls(game, team, otherTeam):
 	message = ['Nonshooting foul. ']
-	otherFouls =  int(game[otherTeam]['fouls'])
+	otherFouls =  int(game[otherTeam]['fouls'][game['status']['half']-1])
 
 	if  game[team]['bonus'] == 'SB':
 		game['status']['free'] = '1and1Start'

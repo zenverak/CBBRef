@@ -102,6 +102,9 @@ def init():
 	CREATE TABLE IF NOT EXISTS Week
 	(week char(10))
 	''')
+
+	c.execute(''' CREATE TABLE IF NOT EXISTS chewers
+	   (Rname char(50))  ''')
 	dbConn.commit()
 
 
@@ -110,6 +113,19 @@ def close():
 	dbConn.commit()
 	dbConn.close()
 
+
+def checkInChewers(name):
+	c = dbConn.cursor()
+	try:
+		c.execute('''
+		select count(*) from chewers where Rname = ?
+		''',(name,))
+	except sqlite3.IntegrityError:
+		return false
+	if c.rowcount > 0:
+		return True
+	else:
+		return False
 def getWeek():
 	c = dbConn.cursor()
 	try:
@@ -143,7 +159,7 @@ def insertStats(stats):
 	else:
 		return False
 
-0
+
 
 
 def insertNewPlays(gameid, ocoach, dcoach, ptype, call, onum, dnum, diff, result, qrt, pclock):
